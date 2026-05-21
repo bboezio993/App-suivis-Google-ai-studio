@@ -1,12 +1,6 @@
 export type ReadinessScore = number; // 0-100
 
-export type DataSource =
-  | "garmin"
-  | "oura"
-  | "apple_health"
-  | "manual"
-  | "strava"
-  | "myfitnesspal";
+export type DataSource = "garmin" | "manual" | "derived";
 
 export interface UserProfile {
   general: {
@@ -74,7 +68,24 @@ export interface NormalizedMetric {
     | "body_battery"
     | "mood"
     | "soreness"
-    | "weight";
+    | "weight"
+    | "subjective_fatigue"
+    | "subjective_stress"
+    | "subjective_sleep_quality"
+    | "subjective_soreness"
+    | "subjective_mood"
+    | "motivation"
+    | "pain_score"
+    | "digestive_comfort"
+    | "appetite"
+    | "energy_level"
+    | "notes_context"
+    | "spo2"
+    | "respiration"
+    | "vo2max"
+    | "ftp"
+    | "lthr"
+    | "sleep_score";
   value: number;
   unit: string;
   confidenceScore: number; // 0-100 (Couche A: Qualité de la donnée)
@@ -240,3 +251,44 @@ export interface GarminActivity {
   tss: number | null;
   // ... other metrics can be added as needed
 }
+
+export interface MealItem {
+  foodId: string;
+  foodName: string;
+  quantity: number;
+  unit: string;
+  gramsSelected: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  rawCookedState?: "raw" | "cooked";
+}
+
+export interface MealLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  mealType: "breakfast" | "lunch" | "dinner" | "snack" | "pre_workout" | "intra_workout" | "post_workout";
+  items: MealItem[];
+  photoIds?: string[];
+  hungerBefore?: number; // 1-5
+  satietyAfter?: number; // 1-5
+  digestionAfter?: number; // 1-5
+  notes?: string;
+}
+
+export interface PainLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  location: string; // e.g., 'Knee', 'Lower Back'
+  side: "left" | "right" | "bilateral" | "none";
+  type: "muscular" | "tendinous" | "articular" | "osseux" | "nervous" | "unknown";
+  intensityRest: number; // 0-10
+  intensityActive: number; // 0-10
+  onset: "onset_sudden" | "onset_gradual";
+  aggravatedBy?: string;
+  relievedBy?: string;
+  impact: string; // 'none' | 'modified_training' | 'no_training'
+  notes?: string;
+}
+

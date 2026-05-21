@@ -37,7 +37,7 @@ export function MainLayout() {
           <NavItem to="/nutrition" icon={<Droplets size={20} />} label="Nutrition" />
           <NavItem to="/mental" icon={<Brain size={20} />} label="Mental" />
           <Separator className="my-2" />
-          <NavItem to="/connections" icon={<LinkIcon size={20} />} label="Connexions" />
+          <NavItem to="/connections" icon={<LinkIcon size={20} />} label="Sources & Données" />
         </nav>
 
         <div className="mt-auto flex flex-col gap-4">

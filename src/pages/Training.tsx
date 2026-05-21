@@ -321,84 +321,86 @@ export function Training() {
           <h3 className="text-lg font-semibold mb-4">Historique des Activités</h3>
           <div className="divide-y divide-border">
             {filteredActivities.map((activity) => (
-              <Dialog key={activity.id}>
-                <DialogTrigger render={
-                  <button type="button" className="w-full text-left py-4 flex items-center justify-between cursor-pointer hover:bg-secondary/50 px-2 rounded-lg transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                        <Activity size={20} className="text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{activity.title}</h4>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={14} /> {activity.date.split(" ")[0]}
-                          </span>
-                          <span>•</span>
-                          <span>{activity.type}</span>
+              <div key={activity.id}>
+                <Dialog>
+                  <DialogTrigger render={
+                    <button type="button" className="w-full text-left py-4 flex items-center justify-between cursor-pointer hover:bg-secondary/50 px-2 rounded-lg transition-colors">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                          <Activity size={20} className="text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{activity.title}</h4>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={14} /> {activity.date.split(" ")[0]}
+                            </span>
+                            <span>•</span>
+                            <span>{activity.type}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">
-                        {activity.distance > 0
-                          ? `${activity.distance} km`
-                          : activity.duration}
-                      </div>
-                      {activity.tss && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          TSS: {activity.tss}
+                      <div className="text-right">
+                        <div className="font-medium">
+                          {activity.distance > 0
+                            ? `${activity.distance} km`
+                            : activity.duration}
                         </div>
-                      )}
+                        {activity.tss && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            TSS: {activity.tss}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  } />
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl">{activity.title}</DialogTitle>
+                      <div className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
+                        <Calendar size={14} /> {activity.date} • {activity.type}
+                      </div>
+                    </DialogHeader>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
+                      <div className="bg-secondary/50 p-4 rounded-xl text-center">
+                        <Clock size={20} className="mx-auto mb-2 text-muted-foreground" />
+                        <div className="font-bold text-lg">{activity.duration}</div>
+                        <div className="text-xs text-muted-foreground">Durée</div>
+                      </div>
+                      <div className="bg-secondary/50 p-4 rounded-xl text-center">
+                        <Activity size={20} className="mx-auto mb-2 text-muted-foreground" />
+                        <div className="font-bold text-lg">{activity.distance > 0 ? `${activity.distance} km` : '-'}</div>
+                        <div className="text-xs text-muted-foreground">Distance</div>
+                      </div>
+                      <div className="bg-secondary/50 p-4 rounded-xl text-center">
+                        <Heart size={20} className="mx-auto mb-2 text-red-500" />
+                        <div className="font-bold text-lg">{activity.avgHeartRate || '-'} bpm</div>
+                        <div className="text-xs text-muted-foreground">FC Moyenne</div>
+                      </div>
+                      <div className="bg-secondary/50 p-4 rounded-xl text-center">
+                        <Flame size={20} className="mx-auto mb-2 text-orange-500" />
+                        <div className="font-bold text-lg">{activity.calories || '-'} kcal</div>
+                        <div className="text-xs text-muted-foreground">Calories</div>
+                      </div>
                     </div>
-                  </button>
-                } />
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl">{activity.title}</DialogTitle>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
-                      <Calendar size={14} /> {activity.date} • {activity.type}
-                    </div>
-                  </DialogHeader>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
-                    <div className="bg-secondary/50 p-4 rounded-xl text-center">
-                      <Clock size={20} className="mx-auto mb-2 text-muted-foreground" />
-                      <div className="font-bold text-lg">{activity.duration}</div>
-                      <div className="text-xs text-muted-foreground">Durée</div>
-                    </div>
-                    <div className="bg-secondary/50 p-4 rounded-xl text-center">
-                      <Activity size={20} className="mx-auto mb-2 text-muted-foreground" />
-                      <div className="font-bold text-lg">{activity.distance > 0 ? `${activity.distance} km` : '-'}</div>
-                      <div className="text-xs text-muted-foreground">Distance</div>
-                    </div>
-                    <div className="bg-secondary/50 p-4 rounded-xl text-center">
-                      <Heart size={20} className="mx-auto mb-2 text-red-500" />
-                      <div className="font-bold text-lg">{activity.avgHeartRate || '-'} bpm</div>
-                      <div className="text-xs text-muted-foreground">FC Moyenne</div>
-                    </div>
-                    <div className="bg-secondary/50 p-4 rounded-xl text-center">
-                      <Flame size={20} className="mx-auto mb-2 text-orange-500" />
-                      <div className="font-bold text-lg">{activity.calories || '-'} kcal</div>
-                      <div className="text-xs text-muted-foreground">Calories</div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    <h4 className="font-semibold border-b pb-2">Métriques Avancées</h4>
-                    <div className="grid grid-cols-2 gap-y-2 text-sm">
-                      <div className="text-muted-foreground">Training Stress Score (TSS)</div>
-                      <div className="font-medium text-right">{activity.tss || 'Non calculé'}</div>
-                      
-                      <div className="text-muted-foreground">FC Maximale</div>
-                      <div className="font-medium text-right">{activity.maxHeartRate ? `${activity.maxHeartRate} bpm` : '-'}</div>
-                      
-                      <div className="text-muted-foreground">Source</div>
-                      <div className="font-medium text-right capitalize">{activity.source}</div>
+                    <div className="space-y-4">
+                      <h4 className="font-semibold border-b pb-2">Métriques Avancées</h4>
+                      <div className="grid grid-cols-2 gap-y-2 text-sm">
+                        <div className="text-muted-foreground">Training Stress Score (TSS)</div>
+                        <div className="font-medium text-right">{activity.tss || 'Non calculé'}</div>
+                        
+                        <div className="text-muted-foreground">FC Maximale</div>
+                        <div className="font-medium text-right">{activity.maxHeartRate ? `${activity.maxHeartRate} bpm` : '-'}</div>
+                        
+                        <div className="text-muted-foreground">Source</div>
+                        <div className="font-medium text-right capitalize">{activity.source}</div>
+                      </div>
                     </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </div>
             ))}
           </div>
         </div>

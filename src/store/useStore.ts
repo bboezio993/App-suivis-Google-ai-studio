@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, EngineScores, WeeklyScreeningLog } from '../types';
+import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, EngineScores, WeeklyScreeningLog, MealLog, PainLog } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
 import { syncMetricsToFirestore, syncLogToFirestore, syncProfileToFirestore, syncActivitiesToFirestore } from '../services/firebaseSync';
 
@@ -28,6 +28,8 @@ export interface AppState {
   hooperLogs: HooperLog[];
   sessionRpeLogs: SessionRPE[];
   weeklyScreeningLogs: WeeklyScreeningLog[];
+  mealLogs: MealLog[];
+  painLogs: PainLog[];
   engineScores: EngineScores | null;
   addMetric: (metric: NormalizedMetric) => void;
   addMetrics: (metrics: NormalizedMetric[]) => void;
@@ -40,6 +42,8 @@ export interface AppState {
   addHooperLog: (log: HooperLog) => void;
   addSessionRPE: (log: SessionRPE) => void;
   addWeeklyScreeningLog: (log: WeeklyScreeningLog) => void;
+  addMealLog: (log: MealLog) => void;
+  addPainLog: (log: PainLog) => void;
   computeEngineScores: () => void;
 }
 
@@ -51,12 +55,9 @@ const initialProfile: UserProfile = {
 };
 
 const initialConnections: Record<DataSource, ConnectionState> = {
-  garmin: { source: 'garmin', status: 'disconnected', name: 'Garmin Connect', icon: 'garmin', description: 'Montres et compteurs GPS' },
-  oura: { source: 'oura', status: 'disconnected', name: 'Oura Ring', icon: 'oura', description: 'Bague connectée (Sommeil & HRV)' },
-  apple_health: { source: 'apple_health', status: 'disconnected', name: 'Apple Health', icon: 'apple', description: 'Santé iOS & Apple Watch' },
-  strava: { source: 'strava', status: 'disconnected', name: 'Strava', icon: 'strava', description: 'Activités sportives' },
-  myfitnesspal: { source: 'myfitnesspal', status: 'disconnected', name: 'MyFitnessPal', icon: 'mfp', description: 'Nutrition et macros' },
-  manual: { source: 'manual', status: 'connected', name: 'Saisie Manuelle', icon: 'edit', description: 'Données subjectives' },
+  garmin: { source: 'garmin', status: 'disconnected', name: 'Garmin Connect', icon: 'garmin', description: 'Import par fichiers ZIP, CSV, JSON ou FIT (Sommeil, HRV, Activités, Charge).' },
+  manual: { source: 'manual', status: 'connected', name: 'Saisie Manuelle', icon: 'edit', description: 'Formulaires journaliers, RPE, nutrition, hydratation, douleurs.' },
+  derived: { source: 'derived', status: 'connected', name: 'Aura Analytics (Calculé)', icon: 'cpu', description: 'Indicateurs de charge ACWR, Readiness, scores fatigues cumulés.' }
 };
 
 export const useStore = create<AppState>()(
@@ -71,6 +72,8 @@ export const useStore = create<AppState>()(
       hooperLogs: [],
       sessionRpeLogs: [],
       weeklyScreeningLogs: [],
+      mealLogs: [],
+      painLogs: [],
       engineScores: null,
       addMetric: (metric) => {
         set((state) => ({ metrics: [...state.metrics, metric] }));
@@ -154,6 +157,21 @@ export const useStore = create<AppState>()(
         set((state) => {
           const filtered = state.weeklyScreeningLogs.filter(l => l.date !== log.date);
           return { weeklyScreeningLogs: [...filtered, log].sort((a, b) => a.date.localeCompare(b.date)) };
+        });
+        get().computeEngineScores();
+      },
+      addMealLog: (log) => {
+        set((state) => {
+          const filtered = state.mealLogs.filter(l => l.id !== log.id);
+          return { mealLogs: [...filtered, log] };
+        });
+        // Integrate into global metrics so that nutrition calculations get processed in real-time
+        get().computeEngineScores();
+      },
+      addPainLog: (log) => {
+        set((state) => {
+          const filtered = state.painLogs.filter(l => l.id !== log.id);
+          return { painLogs: [...filtered, log] };
         });
         get().computeEngineScores();
       },

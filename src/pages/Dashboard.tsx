@@ -41,11 +41,16 @@ import { HooperForm } from '../components/forms/HooperForm';
 import { WeeklyScreeningForm } from '../components/forms/WeeklyScreeningForm';
 import { EngineScoreCard } from '../components/dashboard/EngineScoreCard';
 import { useStore } from '../store/useStore';
+import { generatePersonalizedRecommendations } from '../domain/recommendations/recommendationEngine';
 
 export function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const { metrics, garminActivities, engineScores, computeEngineScores, userProfile } = useStore();
+
+  const personalizedRecs = useMemo(() => {
+    return generatePersonalizedRecommendations(useStore.getState(), engineScores);
+  }, [engineScores, metrics]);
 
   // Run engine on mount if needed
   useEffect(() => {
@@ -215,37 +220,48 @@ export function Dashboard() {
                 </div>
 
                 {/* Recommendations */}
-                {analysis && analysis.recommendations.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <ArrowRight size={18} className="text-[#5856D6]" />
-                      Recommandations d'Action
-                    </h3>
-                    <div className="grid gap-4">
-                      {analysis.recommendations.map(rec => (
-                        <div key={rec.id} className="bento-card bg-white border border-transparent hover:border-[#E5E5EA] transition-colors">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-[#1D1D1F]">{rec.title}</h4>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              rec.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                              rec.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}>
-                              {rec.priority.toUpperCase()}
-                            </span>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    <ArrowRight size={18} className="text-[#5856D6]" />
+                    Recommandations Cliniques & Sportives Réelles
+                  </h3>
+                  <div className="grid gap-4">
+                    {personalizedRecs.map(rec => (
+                      <div key={rec.id} className="bento-card bg-background border border-border/80 hover:border-primary/25 transition-all shadow-sm">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <Badge variant="outline" className="text-[9px] uppercase font-bold text-muted-foreground mr-2 tracking-wider">
+                              {rec.category}
+                            </Badge>
+                            <h4 className="font-bold text-sm text-foreground inline-block mt-1">{rec.title}</h4>
                           </div>
-                          <p className="text-sm text-[#86868B] leading-relaxed">{rec.description}</p>
-                          {rec.scientificBasis && (
-                            <div className="mt-3 pt-3 border-t border-[#E5E5EA] flex items-start gap-2">
-                              <AlertCircle size={14} className="text-[#86868B] shrink-0 mt-0.5" />
-                              <p className="text-xs text-[#86868B] italic">{rec.scientificBasis}</p>
-                            </div>
-                          )}
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                            rec.priority === 'high' ? 'bg-red-500/10 text-red-500' :
+                            rec.priority === 'medium' ? 'bg-amber-500/10 text-amber-500' :
+                            'bg-blue-500/10 text-blue-500'
+                          }`}>
+                            {rec.priority}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{rec.content}</p>
+                        
+                        <div className="mt-2.5 flex items-center gap-1.5 bg-secondary/25 p-2 rounded-lg text-xs font-semibold text-primary">
+                          <CheckCircle2 size={13} className="shrink-0" />
+                          <span>Action recommandée : {rec.actionLabel}</span>
+                        </div>
+
+                        {rec.scientificClaim && (
+                          <div className="mt-3 pt-3 border-t border-border/60 flex items-start gap-2">
+                            <AlertCircle size={13} className="text-purple-400 shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-muted-foreground italic leading-normal">
+                              <strong>Base scientifique :</strong> {rec.scientificClaim}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Sidebar Context */}

@@ -1,142 +1,254 @@
-import React from "react";
-import { Droplets, Apple, AlertCircle, TrendingUp, Flame } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
 import { useStore } from "../store/useStore";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { NutritionLogger } from "../features/nutrition/NutritionLogger";
+import { 
+  Droplets, 
+  Apple, 
+  AlertCircle, 
+  Plus, 
+  Trash2, 
+  Flame, 
+  Activity, 
+  Scale, 
+  Wine,
+  TrendingDown,
+  Info
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function Nutrition() {
-  const { garminActivities } = useStore();
+  const mealLogs = useStore(state => state.mealLogs);
+  const addMetric = useStore(state => state.addMetric);
+  const metrics = useStore(state => state.metrics);
+  const userProfile = useStore(state => state.userProfile);
+  const garminActivities = useStore(state => state.garminActivities);
 
-  // Calculate average daily calories burned from activities
+  const [waterCups, setWaterCups] = useState(3); // default logged water cups (250ml each)
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayMeals = mealLogs.filter(log => log.date === todayStr);
+
+  // Compute daily totals
+  let dailyCalories = 0;
+  let dailyProtein = 0;
+  let dailyCarbs = 0;
+  let dailyFat = 0;
+
+  todayMeals.forEach(meal => {
+    meal.items.forEach(it => {
+      dailyCalories += it.calories || 0;
+      dailyProtein += it.protein || 0;
+      dailyCarbs += it.carbs || 0;
+      dailyFat += it.fat || 0;
+    });
+  });
+
+  // Calculate Garmin-based expenditures
   const recentActivities = garminActivities.slice(0, 7);
-  const avgCaloriesBurned =
-    recentActivities.length > 0
-      ? recentActivities.reduce((acc, act) => acc + (act.calories || 0), 0) /
-        recentActivities.length
-      : 0;
+  const avgActiveCal = recentActivities.length > 0 
+    ? recentActivities.reduce((acc, a) => acc + (a.calories || 0), 0) / recentActivities.length
+    : 450;
 
-  const hasData = garminActivities.length > 0;
+  const weightKg = userProfile?.general?.weight || 68;
+  const bmr = Math.round(10 * weightKg + 6.25 * (userProfile?.general?.height || 172) - 5 * (userProfile?.general?.age || 26) + 4);
+  const targetCalories = Math.round(bmr + avgActiveCal);
 
-  if (!hasData) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-24 h-24 bg-secondary rounded-full flex items-center justify-center mb-6">
-          <Droplets size={48} className="text-muted-foreground opacity-50" />
-        </div>
-        <h2 className="text-2xl font-bold mb-4">Nutrition & Hydratation</h2>
-        <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
-          Le carburant de votre performance. Suivez votre balance énergétique et
-          la qualité de vos apports.
-        </p>
+  // Dynamic targets (1.8g/kg protein, 4g/kg carbohydrate, 1g/kg fat)
+  const targetProtein = Math.round(weightKg * 1.8);
+  const targetCarbs = Math.round(weightKg * 4.0);
+  const targetFat = Math.round(weightKg * 1.0);
 
-        <div className="bento-card max-w-2xl w-full text-left mb-8 bg-white">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Apple size={18} className="text-[#34C759]" />
-            Périodisation Nutritionnelle
-          </h3>
-          <p className="text-sm text-[#86868B] mb-4">
-            Aura Elite croise vos données d'entraînement avec vos apports pour
-            s'assurer que vous êtes en surplus les jours de forte charge (pour
-            la récupération) et en maintien les jours de repos.
-          </p>
-          <div className="flex items-start gap-3 p-4 bg-[#F2F2F7] rounded-xl">
-            <AlertCircle size={16} className="text-[#0071E3] shrink-0 mt-0.5" />
-            <p className="text-xs text-[#1D1D1F]">
-              <strong>Bientôt :</strong> Intégration avec MyFitnessPal et
-              MacroFactor pour automatiser l'ingestion de vos macronutriments.
-            </p>
-          </div>
-        </div>
+  // Hydration tracking
+  const handleAddWater = () => {
+    setWaterCups(curr => curr + 1);
+    addMetric({
+      id: `water_${Date.now()}`,
+      source: "manual",
+      timestamp: new Date().toISOString(),
+      type: "calories", // re-use or pass placeholder
+      value: 250,
+      unit: "ml",
+      confidenceScore: 100
+    });
+  };
 
-        <Button
-          nativeButton={false}
-          render={<Link to="/connections" />}
-          className="bg-[#34C759] text-white hover:bg-[#34C759]/90"
-        >
-          Voir les intégrations
-        </Button>
-      </div>
-    );
-  }
+  const currentWaterVolMl = waterCups * 250;
+  const targetWaterVolMl = 2500;
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Nutrition & Métabolisme</h2>
-          <p className="text-muted-foreground">
-            Analyse de votre dépense énergétique et de vos besoins
-            nutritionnels.
+    <div className="flex-1 overflow-auto p-8 max-w-7xl mx-auto w-full space-y-8">
+      {/* Page Title */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Nutrition & Métabolisme</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Adaptez vos apports réels aux dépenses réelles de votre corps pour éviter le sous-ravitaillement chronique (RED-S).
           </p>
         </div>
+        <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-mono py-1 px-2">
+          Couche F Active
+        </Badge>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div
-            className="bento-card bento-gradient"
-            style={{
-              background: "linear-gradient(135deg, #34C759 0%, #30B0C7 100%)",
-            }}
-          >
-            <div className="bento-title text-white/80">
-              Dépense Active Moyenne (7j)
+      {/* Main dashboard widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Calories Ring */}
+        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+          <div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Calories ingérées</span>
+            <span className="text-3xl font-black font-mono block mt-1 text-emerald-500">
+              {dailyCalories} <span className="text-xs font-normal text-muted-foreground">/ {targetCalories} kcal</span>
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Objectif de base atteint :</span>
+              <span>{Math.round(Math.min(100, (dailyCalories / targetCalories) * 100))}%</span>
             </div>
-            <div className="text-[42px] font-bold leading-tight text-white">
-              {avgCaloriesBurned > 0 ? Math.round(avgCaloriesBurned) : "-"}
-              <span className="text-xl ml-1 opacity-60 font-normal">kcal</span>
-            </div>
-            <div className="text-sm text-white/80 mt-1">
-              Basé sur vos activités Garmin
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-emerald-500 rounded-full transition-all" 
+                style={{ width: `${Math.min(100, (dailyCalories / targetCalories) * 100)}%` }} 
+              />
             </div>
           </div>
+        </div>
 
-          <div className="bento-card text-center justify-center items-center">
-            <div className="bento-title">Statut d'Hydratation</div>
-            <div className="text-[42px] font-bold leading-tight text-[#0071E3]">
-              -
+        {/* Protein bar */}
+        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+          <div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Protéines (Bâtisseur)</span>
+            <span className="text-3xl font-black font-mono block mt-1 text-indigo-400">
+              {dailyProtein}g <span className="text-xs font-normal text-muted-foreground">/ {targetProtein}g</span>
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Seuil de synthèse musculaire :</span>
+              <span>{Math.round(Math.min(100, (dailyProtein / targetProtein) * 100))}%</span>
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Données insuffisantes
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-indigo-500 rounded-full transition-all" 
+                style={{ width: `${Math.min(100, (dailyProtein / targetProtein) * 100)}%` }} 
+              />
             </div>
           </div>
+        </div>
 
-          <div className="bento-card text-center justify-center items-center">
-            <div className="bento-title">Besoins Estimés (Aujourd'hui)</div>
-            <div className="text-[42px] font-bold leading-tight">
-              {avgCaloriesBurned > 0
-                ? Math.round(2000 + avgCaloriesBurned)
-                : "-"}
-              <span className="text-xl ml-1 text-[#86868B] font-normal">
-                kcal
+        {/* Carbohydrates bar */}
+        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+          <div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Glucides (Glycogène)</span>
+            <span className="text-3xl font-black font-mono block mt-1 text-amber-500">
+              {dailyCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs}g</span>
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Recharge énergétique :</span>
+              <span>{Math.round(Math.min(100, (dailyCarbs / targetCarbs) * 100))}%</span>
+            </div>
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-amber-500 rounded-full transition-all" 
+                style={{ width: `${Math.min(100, (dailyCarbs / targetCarbs) * 100)}%` }} 
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Liquid Hydration tracker card */}
+        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Suivi Hydratation</span>
+              <span className="text-3xl font-black font-mono block mt-1 text-sky-400">
+                {currentWaterVolMl / 1000} <span className="text-xs font-normal text-muted-foreground">/ {targetWaterVolMl / 1000} L</span>
               </span>
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              TMB (Est.) + Dépense Active
-            </div>
+            <Button 
+              onClick={handleAddWater}
+              size="sm" 
+              className="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center p-0 shrink-0"
+            >
+              <Plus size={15} />
+            </Button>
           </div>
-        </div>
-
-        <div className="bento-card mb-8 bg-[#FFF0F0] border border-[#FF3B30]/20">
-          <h3 className="font-semibold text-[#FF3B30] flex items-center gap-2 mb-4">
-            <Flame size={18} />
-            Risque RED-S (Déficit Énergétique Relatif dans le Sport)
-          </h3>
-          <p className="text-sm text-[#1D1D1F] mb-4">
-            Aura Elite analyse votre charge d'entraînement par rapport à votre
-            récupération pour détecter les signes de sous-alimentation
-            chronique.
-          </p>
-          <div className="text-xs text-[#86868B] space-y-2">
-            <p>Indicateurs surveillés :</p>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>Baisse inexpliquée de la RHR ou HRV</li>
-              <li>Troubles du sommeil persistants</li>
-              <li>Fatigue chronique (via Hooper)</li>
-              <li>Aménorrhée (si suivi activé)</li>
-            </ul>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Hydratation active :</span>
+              <span>{Math.min(100, Math.round((currentWaterVolMl / targetWaterVolMl) * 100))}%</span>
+            </div>
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-sky-400 rounded-full transition-all" 
+                style={{ width: `${Math.min(100, (currentWaterVolMl / targetWaterVolMl) * 100)}%` }} 
+              />
+            </div>
           </div>
         </div>
       </div>
-    </ScrollArea>
+
+      {/* Logger module split */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 bento-card p-6">
+          <NutritionLogger />
+        </div>
+
+        {/* Nutritional guidelines and historical logs sidebar */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bento-card p-6 border border-border">
+            <h4 className="font-bold text-sm mb-3 flex items-center gap-1.5">
+              <Info size={16} className="text-primary" />
+              Équivalents Évolution Cru v. Cuit
+            </h4>
+            <div className="space-y-2.5 text-xs text-muted-foreground leading-relaxed">
+              <p>
+                Rappelez-vous que la cuisson multiplie le poids de vos glucides par réabsorption d'eau :
+              </p>
+              <div className="p-3 bg-secondary/15 rounded-xl border space-y-1.5 font-mono text-[10px]">
+                <div className="flex justify-between">
+                  <span>Pâtes crues (&times;2.7)</span>
+                  <span>100g &rarr; 270g cuit</span>
+                </div>
+                <div className="flex justify-between border-t pt-1.5">
+                  <span>Riz blanc cru (&times;2.8)</span>
+                  <span>100g &rarr; 280g cuit</span>
+                </div>
+              </div>
+              <p className="text-[11px]">
+                Renseignez toujours l'état réel (cru ou cuit) de votre aliment pour préserver le modèle d'apport.
+              </p>
+            </div>
+          </div>
+
+          {/* Slipped inline list of historical meals logged today */}
+          <div className="bento-card p-6 border border-border">
+            <h4 className="font-bold text-sm mb-3">Repas loggés aujourd'hui</h4>
+            {todayMeals.length === 0 ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">Aucun repas saisi pour aujourd'hui</div>
+            ) : (
+              <div className="space-y-3">
+                {todayMeals.map((log) => (
+                  <div key={log.id} className="p-3 border rounded-xl border-border bg-secondary/5 space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold uppercase text-[10px] text-primary">{log.mealType}</span>
+                      <span className="font-mono font-bold text-emerald-500">
+                        {log.items.reduce((sum, item) => sum + (item.calories || 0), 0)} kcal
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground leading-tight truncate">
+                      {log.items.map(it => `${it.foodName} (${it.gramsSelected}g)`).join(', ')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
