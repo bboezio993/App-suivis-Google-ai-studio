@@ -29,8 +29,13 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   const totalExpenditure = bmr + (activeCalToday || 500);
   const energyBalance = totalConsCal - totalExpenditure;
 
-  // Availability: (Energy Intake - Active Exercise Energy) / Fat-Free-Mass (FFM guessed @ 80%)
-  const ffm = weightKg * 0.8;
+  let ffm = 0;
+  if (state.userProfile?.general?.weight) {
+    if ((state.userProfile as any)?.general?.bodyFatPercentage) {
+      ffm = state.userProfile.general.weight * (1 - (state.userProfile as any).general.bodyFatPercentage / 100);
+    }
+  }
+
   const activeExerciseCal = state.garminActivities
     .filter((a) => a.date.startsWith(todayStr))
     .reduce((sum, act) => sum + (act.calories || 0), 0);
@@ -51,9 +56,11 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
     confidence = 90;
     const proRatio = Math.min(2, totalPro / (weightKg * 1.6));
     const carbsRatio = Math.min(2, totalCar / (weightKg * 4));
-    let eaScore = 15;
+    let eaScore = 5;
     if (energyAvailability !== null) {
       eaScore = energyAvailability >= 30 ? 20 : 5;
+    } else {
+      limits.push("Disponibilité énergétique non calculable précisément (masse maigre inconnue).");
     }
     nutritionScore = Math.round((proRatio * 50) + (carbsRatio * 30) + eaScore);
     

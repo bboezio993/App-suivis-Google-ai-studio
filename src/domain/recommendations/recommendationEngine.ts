@@ -9,6 +9,11 @@ export interface PersonalizedRecommendation {
   description: string;
   actionLabel: string;
   scientificClaim: string;
+  confidence: number;
+  evidenceLevel: "robust" | "probable" | "exploratory" | "weak_signal";
+  limitations: string[];
+  basedOn: string[];
+  notMedicalAdvice: boolean;
 }
 
 export function generatePersonalizedRecommendations(
@@ -26,7 +31,12 @@ export function generatePersonalizedRecommendations(
         priority: "medium",
         description: "Continuez d'importer vos fichiers d'activité Garmin et d'enregistrer des indices de bien-être pendant au moins 5 jours consécutifs pour stabiliser vos baselines.",
         actionLabel: "Faire le Check-in quotidien",
-        scientificClaim: "L'analyse de la variabilité physiologique nécessite des fenêtres mobiles glissantes pour isoler les déviations des fluctuations ordinaires."
+        scientificClaim: "L'analyse de la variabilité physiologique nécessite des fenêtres mobiles glissantes pour isoler les déviations des fluctuations ordinaires.",
+        confidence: 100,
+        evidenceLevel: "robust",
+        limitations: ["Dépend de la complétion des données"],
+        basedOn: ["data_count"],
+        notMedicalAdvice: true
       }
     ];
   }
@@ -42,7 +52,12 @@ export function generatePersonalizedRecommendations(
       priority: "high",
       description: `Votre indicateur de charge cumulée s'élève à ${scores.acwr.toFixed(2)}. Un signal de surcharge à surveiller.`,
       actionLabel: "Adaptation prudente de la charge recommandée",
-      scientificClaim: "Une progression soudaine de la charge limite le temps d'adaptation structurelle et mécanique."
+      scientificClaim: "Une progression soudaine de la charge limite le temps d'adaptation structurelle et mécanique.",
+      confidence: 80,
+      evidenceLevel: "robust",
+      limitations: ["Modele théorique ACWR, non spécifique à l'individu"],
+      basedOn: ["acwr", "training_load"],
+      notMedicalAdvice: true
     });
   } else if (scores.acwr && scores.acwr >= 0.8 && scores.acwr <= 1.3) {
     recommendations.push({
@@ -52,7 +67,12 @@ export function generatePersonalizedRecommendations(
       priority: "low",
       description: `Votre profil affiche une dynamique de progression maîtrisée et une balance d'effort en phase avec vos capacités récentes.`,
       actionLabel: "Maintenir le plan prévu",
-      scientificClaim: "Une charge constante maximise la consolidation protectrice et les adaptations physiologiques."
+      scientificClaim: "Une charge constante maximise la consolidation protectrice et les adaptations physiologiques.",
+      confidence: 85,
+      evidenceLevel: "robust",
+      limitations: [],
+      basedOn: ["acwr"],
+      notMedicalAdvice: true
     });
   } else if (scores.acwr && scores.acwr < 0.8 && scores.acwr > 0) {
     recommendations.push({
@@ -62,7 +82,12 @@ export function generatePersonalizedRecommendations(
       priority: "medium",
       description: "Votre volume et intensité cumulés récents sont temporairement plus faibles. La régularité est un indicateur de consolidation.",
       actionLabel: "Poursuivre des sessions variées et régulières",
-      scientificClaim: "La régularité protectrice a tendance à diminuer si l'intervalle entre les sollicitations s'allonge."
+      scientificClaim: "La régularité protectrice a tendance à diminuer si l'intervalle entre les sollicitations s'allonge.",
+      confidence: 70,
+      evidenceLevel: "probable",
+      limitations: ["Baisse possiblement planifiée (tapering)"],
+      basedOn: ["acwr"],
+      notMedicalAdvice: true
     });
   }
 
@@ -78,7 +103,12 @@ export function generatePersonalizedRecommendations(
         priority: "high",
         description: `Vous avez signalé une gêne locale. Adaptation prudente de l'effort recommandée de manière préventive.`,
         actionLabel: "Limiter les exercices sollicitant l'inconfort",
-        scientificClaim: "L'écoute active des signaux d'inconfort permet de prévenir l'accumulation de tension sur les groupes stabilisateurs."
+        scientificClaim: "L'écoute active des signaux d'inconfort permet de prévenir l'accumulation de tension sur les groupes stabilisateurs.",
+        confidence: 90,
+        evidenceLevel: "robust",
+        limitations: ["Douleur subjective auto-évaluée"],
+        basedOn: ["pain_score", "pain_location"],
+        notMedicalAdvice: true
       });
     }
   }
@@ -96,7 +126,12 @@ export function generatePersonalizedRecommendations(
       priority: "medium",
       description: `Une restriction prolongée de sommeil semble en cours, limitant la profondeur de la récupération passive globale.`,
       actionLabel: "Si possible, augmenter légèrement le temps de repos nocturne",
-      scientificClaim: "La régularité du cycle veille-sommeil est le facteur prépondérant dans l'assimilation d'une charge d'entraînement."
+      scientificClaim: "La régularité du cycle veille-sommeil est le facteur prépondérant dans l'assimilation d'une charge d'entraînement.",
+      confidence: 80,
+      evidenceLevel: "robust",
+      limitations: ["L'estimation Garmin des phases d'éveil nocturne n'est pas clinique"],
+      basedOn: ["sleep_duration"],
+      notMedicalAdvice: true
     });
   }
 
@@ -110,7 +145,12 @@ export function generatePersonalizedRecommendations(
       priority: "low",
       description: "Saisir vos apports journaliers permet d'affiner l'estimation d'une disponibilité énergétique adéquate pour soutenir l'effort.",
       actionLabel: "Repas du jour",
-      scientificClaim: "La disponibilité énergétique est un paramètre de régulation protecteur de la récupération."
+      scientificClaim: "La disponibilité énergétique est un paramètre de régulation protecteur de la récupération.",
+      confidence: 50,
+      evidenceLevel: "probable",
+      limitations: ["L'apport calorique estimé dépend de la complétion du journal de repas"],
+      basedOn: ["meal_logs"],
+      notMedicalAdvice: true
     });
   }
 
@@ -123,7 +163,12 @@ export function generatePersonalizedRecommendations(
       priority: "low",
       description: "Les indicateurs centraux restent autour de vos standards habituels. Cette continuité favorise l'assimilation à long terme.",
       actionLabel: "Conserver vos routines.",
-      scientificClaim: "Une variabilité de fréquence cardiaque stable montre un maintien harmonieux du tonus neurovégétatif."
+      scientificClaim: "Une variabilité de fréquence cardiaque stable montre un maintien harmonieux du tonus neurovégétatif.",
+      confidence: 75,
+      evidenceLevel: "robust",
+      limitations: ["Basé sur des moyennes de population"],
+      basedOn: ["hrv_rmssd", "rhr"],
+      notMedicalAdvice: true
     });
   }
 

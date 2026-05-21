@@ -4,6 +4,8 @@ import { get, set as idbSet, del } from 'idb-keyval';
 import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
 import { syncMetricsToFirestore, syncLogToFirestore, syncProfileToFirestore, syncActivitiesToFirestore } from '../services/firebaseSync';
+import { metricRegistry } from '../domain/metrics/metricRegistry';
+import { assessDataQuality } from '../domain/dataQuality/dataQualityService';
 
 // Custom storage for IndexedDB
 const idbStorage: StateStorage = {
@@ -79,13 +81,39 @@ export const useStore = create<AppState>()(
       contextLogs: [],
       engineScores: null,
       addMetric: (metric) => {
+        if (!metricRegistry[metric.type]) {
+          console.warn(`[Store] Rejected unregistered metric type: ${metric.type}`);
+          return;
+        }
+        const quality = assessDataQuality(metric);
+        metric.confidenceScore = quality.finalConfidence;
+        
+        if (quality.finalConfidence < 50) {
+          console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, metric);
+          return;
+        }
+        
         set((state) => ({ metrics: [...state.metrics, metric] }));
         get().computeEngineScores();
       },
       addMetrics: (metrics) => {
+        const validMetrics = metrics.filter(m => {
+          if (!metricRegistry[m.type]) {
+            console.warn(`[Store] Rejected unregistered metric type: ${m.type}`);
+            return false;
+          }
+          const quality = assessDataQuality(m);
+          m.confidenceScore = quality.finalConfidence;
+          
+          if (quality.finalConfidence < 50) {
+             console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, m);
+             return false;
+          }
+          return true;
+        });
         set((state) => {
           const metricMap = new Map(state.metrics.map(m => [m.id, m]));
-          metrics.forEach(m => {
+          validMetrics.forEach(m => {
             const existing = metricMap.get(m.id);
             // Update if it doesn't exist, or if the new one has a higher confidence score
             if (!existing || m.confidenceScore >= existing.confidenceScore) {

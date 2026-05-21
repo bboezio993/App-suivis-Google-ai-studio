@@ -3,6 +3,23 @@ export const calculateMean = (values: number[]): number => {
   return values.reduce((sum, val) => sum + val, 0) / values.length;
 };
 
+export const calculateMedian = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+};
+
+export const calculateMAD = (values: number[], median?: number): number => {
+  if (values.length === 0) return 0;
+  const med = median !== undefined ? median : calculateMedian(values);
+  const deviations = values.map(v => Math.abs(v - med));
+  return calculateMedian(deviations) * 1.4826; // Scale factor for normal distribution
+};
+
 export const calculateStdDev = (values: number[], mean?: number): number => {
   if (values.length < 2) return 0;
   const m = mean !== undefined ? mean : calculateMean(values);

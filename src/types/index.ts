@@ -126,12 +126,20 @@ export interface WeeklyScreeningLog {
 // Couche B: Structure de Baseline Individuelle
 export interface BaselineStats {
   currentValue: number;
+  count: number;
+  maturity: "insufficient" | "exploratory" | "preliminary" | "usable" | "robust";
   mean7d: number;
   std7d: number;
+  mean14d: number;
   mean28d: number;
   std28d: number;
+  mean42d: number;
+  mean90d: number;
+  median28d: number;
+  mad28d: number;
   zScore7d: number; // (current - mean7d) / std7d
   zScore28d: number;
+  robustZScore28d: number; // (current - median28d) / mad28d
   cv28d: number; // Coefficient de variation (std/mean)
   trend: "increasing" | "decreasing" | "stable";
 }
@@ -170,6 +178,10 @@ export interface EngineScores {
   };
   globalActionPriority: string; // ex: "Priorité Sommeil", "Feu Vert Entraînement", "Risque RED-S"
   acwr?: number; // Acute:Chronic Workload Ratio
+  trends?: {
+    hrv: "up" | "down" | "stable";
+    recovery: "improving" | "declining" | "stable";
+  };
 }
 
 export interface ConnectionState {

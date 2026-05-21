@@ -111,6 +111,15 @@ export function runRecoveryEngine(state: AppState): ModularEngineResult {
     secureWording += " Une récupération perturbée peut être corrélée au repas tardif ou à l'apport d'alcool signalé.";
   }
 
+  let recoveryTrend: "improving" | "declining" | "stable" = "stable";
+  if (hrvBaseline && rhrBaseline) {
+    if (hrvBaseline.trend === "increasing" && (rhrBaseline.trend === "decreasing" || rhrBaseline.trend === "stable")) {
+      recoveryTrend = "improving";
+    } else if (hrvBaseline.trend === "decreasing" && (rhrBaseline.trend === "increasing" || rhrBaseline.trend === "stable")) {
+      recoveryTrend = "declining";
+    }
+  }
+
   return {
     score: roundedScore,
     status,
@@ -120,6 +129,9 @@ export function runRecoveryEngine(state: AppState): ModularEngineResult {
     dataUsed,
     dataMissing,
     limits,
-    secureWording
+    secureWording,
+    trends: {
+      recovery: recoveryTrend
+    }
   };
 }

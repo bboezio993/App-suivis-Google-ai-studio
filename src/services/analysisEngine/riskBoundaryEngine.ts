@@ -1,9 +1,4 @@
 import { AppState } from "../../store/useStore";
-import { runTrainingLoadEngine } from "./trainingLoadEngine";
-import { runRecoveryEngine } from "./recoveryEngine";
-import { runSleepEngine } from "./sleepEngine";
-import { runNutritionEngine } from "./nutritionEngine";
-import { runContextEngine } from "./contextEngine";
 import { ModularEngineResult } from "./types";
 
 export interface RiskEngineResult {
@@ -12,16 +7,17 @@ export interface RiskEngineResult {
   globalActionPriority: string;
 }
 
-export function runRiskBoundaryEngine(state: AppState): RiskEngineResult {
+export function runRiskBoundaryEngine(
+  state: AppState,
+  trainingRes: ModularEngineResult,
+  recoveryRes: ModularEngineResult,
+  sleepRes: ModularEngineResult,
+  nutritionRes: ModularEngineResult,
+  contextRes: ModularEngineResult
+): RiskEngineResult {
   const todayStr = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 24 * 3600 * 1000);
   const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-  const trainingRes = runTrainingLoadEngine(state);
-  const recoveryRes = runRecoveryEngine(state);
-  const sleepRes = runSleepEngine(state);
-  const nutritionRes = runNutritionEngine(state);
-  const contextRes = runContextEngine(state);
 
   const flags: string[] = [];
 

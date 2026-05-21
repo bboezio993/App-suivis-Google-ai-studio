@@ -43,7 +43,7 @@ export async function analyzeHealthData(
        - "${explainability.shortSummary}"
        - "${explainability.pedagogicalReformulation}"
     
-    Rédigez une synthèse claire d'environ 3 à 4 phrases en français dans la propriété "summary", puis indiquez les tendances stables, en hausse, ou en baisse correspondantes.
+    Rédigez une synthèse claire d'environ 3 à 4 phrases en français dans la propriété "summary".
   `;
 
   const prompt = `
@@ -69,17 +69,9 @@ export async function analyzeHealthData(
               enum: ["optimal", "stable", "strained", "critical"], 
               description: "Adapté du statut de disponibilité." 
             },
-            summary: { type: Type.STRING, description: "Synthèse pédagogique et fluide de l'état actuel de récupération." },
-            trends: {
-              type: Type.OBJECT,
-              properties: {
-                hrv: { type: Type.STRING, enum: ["up", "down", "stable"] },
-                recovery: { type: Type.STRING, enum: ["improving", "declining", "stable"] }
-              },
-              required: ["hrv", "recovery"]
-            }
+            summary: { type: Type.STRING, description: "Synthèse pédagogique et fluide de l'état actuel de récupération." }
           },
-          required: ["readinessScore", "status", "summary", "trends"]
+          required: ["readinessScore", "status", "summary"]
         }
       }
     });
@@ -90,11 +82,11 @@ export async function analyzeHealthData(
     // Force strict alignment of scores and status with internal mathematical determinations, protecting against AI hallucination or deviations
     let mappedStatus: "optimal" | "stable" | "strained" | "critical" = "stable";
     if (calculatedScores.performanceReadiness.status === "optimal") {
-      mappedStatus = "optimal";
+       mappedStatus = "optimal";
     } else if (calculatedScores.performanceReadiness.status === "danger") {
-      mappedStatus = "critical";
+       mappedStatus = "critical";
     } else if (calculatedScores.performanceReadiness.status === "low") {
-      mappedStatus = "strained";
+       mappedStatus = "strained";
     }
 
     return {
@@ -103,8 +95,8 @@ export async function analyzeHealthData(
       summary: result.summary || explainability.naturalLanguageExplanation,
       recommendations: [], // Deterministic recommendations are handled separately on the dashboard
       trends: {
-        hrv: result.trends?.hrv || "stable",
-        recovery: result.trends?.recovery || "stable"
+        hrv: calculatedScores.trends?.hrv || "stable",
+        recovery: calculatedScores.trends?.recovery || "stable"
       }
     };
   } catch (error) {
@@ -121,8 +113,8 @@ export async function analyzeHealthData(
       summary: explainability.naturalLanguageExplanation,
       recommendations: [],
       trends: {
-        hrv: "stable",
-        recovery: "stable"
+        hrv: calculatedScores.trends?.hrv || "stable",
+        recovery: calculatedScores.trends?.recovery || "stable"
       }
     };
   }

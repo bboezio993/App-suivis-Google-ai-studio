@@ -10,4 +10,8 @@ export interface ModularEngineResult {
   dataMissing: string[];
   limits: string[];
   secureWording: string;
+  trends?: {
+    hrv?: "up" | "down" | "stable";
+    recovery?: "improving" | "declining" | "stable";
+  };
 }

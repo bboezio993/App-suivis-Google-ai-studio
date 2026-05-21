@@ -98,7 +98,7 @@ export function Dashboard() {
         </p>
         <div className="flex gap-4">
           <Button nativeButton={false} render={<Link to="/connections" />} className="bg-[#0071E3] text-white hover:bg-[#0071E3]/90">
-            Connecter des sources
+            Importer mes fichiers Garmin
           </Button>
           <Dialog>
             <DialogTrigger render={
@@ -196,7 +196,7 @@ export function Dashboard() {
                 <div className="bento-card bg-white">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <Zap size={18} className="text-[#0071E3]" />
-                    Synthèse IA (Gemini)
+                    Synthèse pédagogique
                   </h3>
                   {analysis ? (
                     <p className="text-[#1D1D1F] leading-relaxed">
