@@ -85,11 +85,31 @@ export function assessDataQuality(metric: NormalizedMetric, currentTimestamp = n
         flags.push("POIDS_HORS_LIMITES");
       }
       break;
-    case "calories":
+    case "active_calories":
+    case "activity_calories":
+    case "energy_intake_kcal":
       if (val < 0 || val > 15000) {
         plausibility = 10;
         flags.push("CALORIES_HORS_LIMITES");
         artifactRisk = "medium";
+      }
+      break;
+    case "stress_score":
+      if (val < 0 || val > 100) {
+        plausibility = 0;
+        flags.push("STRESS_SCORE_HORS_LIMITES");
+      }
+      break;
+    case "respiration_rate":
+      if (val < 4 || val > 50) {
+        plausibility = 10;
+        flags.push("FREQ_RESPIRATOIRE_ATYPIQUE");
+      }
+      break;
+    case "hydration_volume":
+      if (val < 0 || val > 10000) {
+        plausibility = 10;
+        flags.push("HYDRATATION_HORS_LIMITES");
       }
       break;
   }
@@ -101,7 +121,7 @@ export function assessDataQuality(metric: NormalizedMetric, currentTimestamp = n
   }
 
   // Rule B: Garmin calories used as estimate, never exact measure -> flag & reduce confidence slightly
-  if (metric.source === "garmin" && (metric.type === "calories" || metric.type === "training_load")) {
+  if (metric.source === "garmin" && (metric.type === "active_calories" || metric.type === "activity_calories" || metric.type === "training_load")) {
     flags.push("DONNÉE_ESTIMATIV_SUJET_A_VARIATION");
     sourceReliability = Math.min(sourceReliability, 85);
   }

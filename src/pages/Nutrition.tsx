@@ -66,7 +66,7 @@ export function Nutrition() {
       id: `water_${Date.now()}`,
       source: "manual",
       timestamp: new Date().toISOString(),
-      type: "calories", // re-use or pass placeholder
+      type: "hydration_volume",
       value: 250,
       unit: "ml",
       confidenceScore: 100
@@ -83,7 +83,7 @@ export function Nutrition() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Nutrition & Métabolisme</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Adaptez vos apports réels aux dépenses réelles de votre corps pour éviter le sous-ravitaillement chronique (RED-S).
+            Adaptez vos apports réels aux dépenses physiques estimées pour optimiser votre récupération.
           </p>
         </div>
         <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-mono py-1 px-2">

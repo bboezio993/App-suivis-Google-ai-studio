@@ -75,7 +75,7 @@ export function Dashboard() {
         sleepDuration: recentMetrics.find(m => m.type === 'sleep_duration')?.value || 0,
         sleepQuality: recentMetrics.find(m => m.type === 'sleep_score')?.value || 0,
         rpe: recentMetrics.find(m => m.type === 'rpe')?.value || 0,
-        stressLevel: recentMetrics.find(m => m.type === 'stress')?.value || 0,
+        stressLevel: recentMetrics.find(m => m.type === 'stress_score')?.value || 0,
         mood: 'Neutral',
         soreness: 0,
         weight: 0
@@ -223,7 +223,7 @@ export function Dashboard() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                     <ArrowRight size={18} className="text-[#5856D6]" />
-                    Recommandations Cliniques & Sportives Réelles
+                    Recommandations d'entraînement et de récupération
                   </h3>
                   <div className="grid gap-4">
                     {personalizedRecs.map(rec => (
@@ -243,7 +243,7 @@ export function Dashboard() {
                             {rec.priority}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{rec.content}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{rec.description}</p>
                         
                         <div className="mt-2.5 flex items-center gap-1.5 bg-secondary/25 p-2 rounded-lg text-xs font-semibold text-primary">
                           <CheckCircle2 size={13} className="shrink-0" />

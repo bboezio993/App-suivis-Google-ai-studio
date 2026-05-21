@@ -97,7 +97,9 @@ export function normalizeMetric(metric: NormalizedMetric): NormalizedMetric {
         norm.unit = "h";
       }
       break;
-    case "calories":
+    case "active_calories":
+    case "activity_calories":
+    case "energy_intake_kcal":
       if (norm.unit === "kJ") {
         norm.value = convertEnergy(norm.value, "kJ", "kcal");
         norm.unit = "kcal";

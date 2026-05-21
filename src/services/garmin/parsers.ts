@@ -274,7 +274,7 @@ export const parseWellnessJSON = async (jsonString: string, logId: string) => {
                 source: 'garmin',
                 sourceId: logId,
                 timestamp,
-                type: 'respiration',
+                type: 'respiration_rate',
                 value: m.value,
                 unit: 'brpm',
                 confidenceScore: 85
@@ -346,7 +346,7 @@ export const parseWellnessJSON = async (jsonString: string, logId: string) => {
           source: 'garmin',
           sourceId: logId,
           timestamp,
-          type: 'stress',
+          type: 'stress_score',
           value: Number(stress),
           unit: '/100',
           confidenceScore: 85
