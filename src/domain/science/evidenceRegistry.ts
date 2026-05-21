@@ -45,10 +45,10 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
     ],
     userFacingExplanation: "Vos nuits récentes n'ont pas permis de reconstituer vos réserves. La dette de sommeil dégrade la vitesse de réaction, la synthèse protéique musculaire et augmente votre susceptibilité aux signaux de douleur."
   },
-  acwr_danger: {
-    id: "acwr_danger",
+  acwr_caution: {
+    id: "acwr_caution",
     topic: "Charge d'Entraînement (ACWR)",
-    claim: "Un Acute:Chronic Workload Ratio (ratio charge aiguë / chronique) supérieur à 1.5 multiplie de façon critique le risque de fatigue pathologique et de signaux de blessure dans les 7-10 jours.",
+    claim: "Un Acute:Chronic Workload Ratio (ratio charge aiguë / chronique) supérieur à 1.5 augmente significativement le risque de fatigue prolongée dans les 7-10 jours.",
     evidenceLevel: "systematic_review",
     applicability: "S'applique principalement aux sports d'endurance, de course à pied et de football.",
     limitations: [
@@ -71,13 +71,13 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
   },
   low_energy_availability: {
     id: "low_energy_availability",
-    topic: "Disponibilité Énergétique (RED-S)",
-    claim: "Une faible disponibilité énergétique (intake alimentaire - exercice < 30 kcal/kg masse maigre/jour) prolongée perturbe l'axe hypothalamo-hypophysaire, réduisant les niveaux hormonaux de récupération et affectant la régularité du cycle menstruel.",
+    topic: "Disponibilité Énergétique (EA)",
+    claim: "Une faible disponibilité énergétique (intake alimentaire - exercice < 30 kcal/kg masse maigre/jour) prolongée perturbe l'axe hypothalamo-hypophysaire, réduisant les niveaux hormonaux d'adaptation.",
     evidenceLevel: "guideline",
     applicability: "Surtout critique chez les femmes athlètes de disciplines d'endurance avec esthétique ou catégorie de poids.",
     limitations: [
       "Difficile à estimer sans mesure de l'intake calorique exact et de la composition corporelle précise."
     ],
-    userFacingExplanation: "Votre alimentation actuelle ne couvre peut-être pas les besoins combinés de votre quotidien et de vos séances sportives de haute intensité. Votre corps réduit le métabolisme de certaines fonctions pour survivre."
+    userFacingExplanation: "Votre alimentation actuelle ne couvre peut-être pas les besoins combinés de votre quotidien et de vos séances sportives de haute intensité."
   }
 };

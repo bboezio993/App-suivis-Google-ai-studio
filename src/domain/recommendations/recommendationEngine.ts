@@ -62,15 +62,15 @@ export function generatePersonalizedRecommendations(
   } else if (scores.acwr && scores.acwr >= 0.8 && scores.acwr <= 1.3) {
     recommendations.push({
       id: "rec_acwr_optimal",
-      title: "Fenêtre d'entraînement optimale",
+      title: "Disponibilité favorable",
       category: "training",
       priority: "low",
       description: `Votre profil affiche une dynamique de progression maîtrisée et une balance d'effort en phase avec vos capacités récentes.`,
-      actionLabel: "Maintenir le plan prévu",
-      scientificClaim: "Une charge constante maximise la consolidation protectrice et les adaptations physiologiques.",
+      actionLabel: "Maintenir si le ressenti reste favorable",
+      scientificClaim: "Une charge proportionnée favorise l'adaptation sans générer de fatigue résiduelle excessive.",
       confidence: 85,
       evidenceLevel: "robust",
-      limitations: [],
+      limitations: ["Dépend de la complétion des données subjectives non renseignées"],
       basedOn: ["acwr"],
       notMedicalAdvice: true
     });
@@ -161,12 +161,12 @@ export function generatePersonalizedRecommendations(
       title: "Tendance physiologique stable",
       category: "recovery",
       priority: "low",
-      description: "Les indicateurs centraux restent autour de vos standards habituels. Cette continuité favorise l'assimilation à long terme.",
-      actionLabel: "Conserver vos routines.",
-      scientificClaim: "Une variabilité de fréquence cardiaque stable montre un maintien harmonieux du tonus neurovégétatif.",
-      confidence: 75,
+      description: "Les indicateurs suggèrent un état global situé dans votre zone de référence.",
+      actionLabel: "Conserver vos routines si le ressenti est bon",
+      scientificClaim: "Une variabilité de fréquence cardiaque stable montre un maintien du tonus neurovégétatif.",
+      confidence: 70,
       evidenceLevel: "robust",
-      limitations: ["Basé sur des moyennes de population"],
+      limitations: ["Analyse sans signaux atypiques, dépendante de l'absence de données subjectives contraires"],
       basedOn: ["hrv_rmssd", "rhr"],
       notMedicalAdvice: true
     });

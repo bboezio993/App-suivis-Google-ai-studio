@@ -106,7 +106,7 @@ export const runAnalysisEngine = (state: AppState): EngineScores => {
       confidence: mentalRes.confidence,
       status: mentalRes.status as any
     },
-    medicalRisk: {
+    riskBoundary: {
       flags: riskRes.flags,
       level: riskRes.level
     },

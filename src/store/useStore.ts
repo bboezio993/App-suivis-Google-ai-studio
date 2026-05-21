@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog } from '../types';
+import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog, RejectedMetric } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
 import { syncMetricsToFirestore, syncLogToFirestore, syncProfileToFirestore, syncActivitiesToFirestore } from '../services/firebaseSync';
 import { metricRegistry } from '../domain/metrics/metricRegistry';
@@ -22,6 +22,7 @@ const idbStorage: StateStorage = {
 
 export interface AppState {
   metrics: NormalizedMetric[];
+  rejectedMetrics: RejectedMetric[];
   connections: Record<DataSource, ConnectionState>;
   userProfile: UserProfile;
   menstrualLogs: MenstrualLog[];
@@ -68,6 +69,7 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       metrics: [],
+      rejectedMetrics: [],
       connections: initialConnections,
       userProfile: initialProfile,
       menstrualLogs: [],
@@ -83,6 +85,9 @@ export const useStore = create<AppState>()(
       addMetric: (metric) => {
         if (!metricRegistry[metric.type]) {
           console.warn(`[Store] Rejected unregistered metric type: ${metric.type}`);
+          set((state) => ({
+            rejectedMetrics: [...state.rejectedMetrics, { id: crypto.randomUUID(), metric, reason: "Unregistered metric type", source: metric.source, timestamp: metric.timestamp, typeProposed: metric.type, value: metric.value, unit: metric.unit, confidenceScore: metric.confidenceScore || 0 }]
+          }));
           return;
         }
         const quality = assessDataQuality(metric);
@@ -90,6 +95,9 @@ export const useStore = create<AppState>()(
         
         if (quality.finalConfidence < 50) {
           console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, metric);
+          set((state) => ({
+            rejectedMetrics: [...state.rejectedMetrics, { id: crypto.randomUUID(), metric, reason: `Low quality (${quality.finalConfidence}%)`, source: metric.source, timestamp: metric.timestamp, typeProposed: metric.type, value: metric.value, unit: metric.unit, confidenceScore: quality.finalConfidence }]
+          }));
           return;
         }
         
@@ -97,9 +105,11 @@ export const useStore = create<AppState>()(
         get().computeEngineScores();
       },
       addMetrics: (metrics) => {
+        const rejected: RejectedMetric[] = [];
         const validMetrics = metrics.filter(m => {
           if (!metricRegistry[m.type]) {
             console.warn(`[Store] Rejected unregistered metric type: ${m.type}`);
+            rejected.push({ id: crypto.randomUUID(), metric: m, reason: "Unregistered metric type", source: m.source, timestamp: m.timestamp, typeProposed: m.type, value: m.value, unit: m.unit, confidenceScore: m.confidenceScore || 0, importLogId: m.sourceId });
             return false;
           }
           const quality = assessDataQuality(m);
@@ -107,6 +117,7 @@ export const useStore = create<AppState>()(
           
           if (quality.finalConfidence < 50) {
              console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, m);
+             rejected.push({ id: crypto.randomUUID(), metric: m, reason: `Low quality (${quality.finalConfidence}%)`, source: m.source, timestamp: m.timestamp, typeProposed: m.type, value: m.value, unit: m.unit, confidenceScore: quality.finalConfidence, importLogId: m.sourceId });
              return false;
           }
           return true;
@@ -120,7 +131,10 @@ export const useStore = create<AppState>()(
               metricMap.set(m.id, m);
             }
           });
-          return { metrics: Array.from(metricMap.values()) };
+          return {
+            metrics: Array.from(metricMap.values()),
+            rejectedMetrics: [...state.rejectedMetrics, ...rejected]
+          };
         });
         
         // Debounce computation to avoid huge performance hit during mass imports

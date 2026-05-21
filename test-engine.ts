@@ -1,6 +1,8 @@
+import assert from "node:assert";
 import { AppState } from "./src/store/useStore";
 import { runAnalysisEngine } from "./src/services/analysisEngine/engine";
-import { runReadinessEngine } from "./src/services/analysisEngine/readinessEngine";
+import { runNutritionEngine } from "./src/services/analysisEngine/nutritionEngine";
+import { metricRegistry } from "./src/domain/metrics/metricRegistry";
 
 const mockState = {
   metrics: [
@@ -50,55 +52,72 @@ const mockState = {
   connections: {}
 } as unknown as AppState;
 
-console.log("=== Aura Elite : Engine Determinism Validation ===");
+console.log("=== Aura Elite : Test Suite ===");
 
-console.log("Running Main Analysis Engine...");
+// 1. App Engine base tests
 const engineScores = runAnalysisEngine(mockState);
-console.log("Score Performance Readiness:", engineScores.performanceReadiness.score);
-console.log("Statut global:", engineScores.performanceReadiness.status);
+assert.ok(engineScores.performanceReadiness.score > 0, "Engine must return a valid numeric score");
+assert.notEqual(engineScores.performanceReadiness.status, "danger", "Status should never be danger (medical term)");
+assert.notEqual(engineScores.performanceReadiness.status as any, "clinical_referral", "Should not use medical terminology");
+console.log("✅ Main Analysis Engine runs without medical terminology and outputs scores");
 
-console.log("\nValidate data output formats:");
-if (engineScores.performanceReadiness.score > 0) {
-  console.log("✅ Engine returned a valid numeric score:", engineScores.performanceReadiness.score);
-} else {
-  console.error("❌ Engine returned invalid score:", engineScores.performanceReadiness.score);
-}
-
-// Missing EA without Lean Body Mass check
+// 2. Nutrition Engine tests
 const noNutritionState = { 
   ...mockState, 
+  userProfile: {
+    ...mockState.userProfile,
+    general: {
+      ...mockState.userProfile.general,
+      // Intentionally missing bodyFatPercentage
+    }
+  },
   mealLogs: [
     {
       id: "l_1",
       date: new Date().toISOString().split("T")[0],
+      mealType: "breakfast",
+      items: [{ foodId: "f_1", foodName: "Eggs", quantity: 1, unit: "serving", gramsSelected: 200, calories: 500, protein: 30, carbs: 10, fat: 20 }]
+    },
+    {
+      id: "l_2",
+      date: new Date().toISOString().split("T")[0],
       mealType: "lunch",
-      items: [
-        {
-          foodId: "f_1",
-          foodName: "Chicken",
-          quantity: 1,
-          unit: "serving",
-          gramsSelected: 200,
-          calories: 1000,
-          protein: 50,
-          carbs: 50,
-          fat: 50
-        }
-      ]
+      items: [{ foodId: "f_2", foodName: "Chicken", quantity: 1, unit: "serving", gramsSelected: 200, calories: 600, protein: 40, carbs: 50, fat: 20 }]
+    },
+    {
+      id: "l_3",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "dinner",
+      items: [{ foodId: "f_3", foodName: "Fish", quantity: 1, unit: "serving", gramsSelected: 200, calories: 400, protein: 30, carbs: 30, fat: 10 }]
     }
   ]
 } as unknown as AppState;
-import { runNutritionEngine } from "./src/services/analysisEngine/nutritionEngine";
+
 const nutRes = runNutritionEngine(noNutritionState);
-if (nutRes.limits.includes("Disponibilité énergétique non calculable précisément (masse maigre inconnue).") || nutRes.limits.some(l => l.includes("masse maigre inconnue"))) {
-  console.log("✅ Energy Availability correctly refuses precise calculation without body fat.");
-} else {
-  console.log("❌ Energy Availability logic failed to warn about unknown lean body mass.");
-  console.log(nutRes.limits);
-}
+assert.ok(
+  nutRes.limits.some(l => l.includes("masse maigre inconnue")), 
+  "Energy Availability logic must warn about unknown lean body mass"
+);
+console.log("✅ Nutrition Engine correctly refuses precise calculation without robust mass data");
 
-if (nutRes.dataMissing.includes("meal_logs_today") || nutRes.dataMissing.includes("meal_logs")) {
-  console.log("✅ Data Quality gracefully handles missing meal logs.");
-}
+// Test incomplete day
+const noNutritionStateIncomplete = {
+  ...noNutritionState,
+  mealLogs: [noNutritionState.mealLogs[0]]
+} as unknown as AppState;
+const nutResIncomplete = runNutritionEngine(noNutritionStateIncomplete);
+assert.ok(
+  nutResIncomplete.limits.some(l => l.includes("incomplète")), 
+  "Nutrition logic must warn about incomplete day (only 1 meal)"
+);
+assert.ok(nutResIncomplete.confidence <= 50, "Confidence should be capped if meal logs are incomplete");
+console.log("✅ Nutrition Engine correctly refuses precise calculation without sufficient meal logs");
 
-console.log("\n=== Test Complete ===");
+// 3. Metric Registry tests
+assert.ok(metricRegistry["stress_score"], "stress_score must be registered");
+assert.ok(metricRegistry["respiration_rate"], "respiration_rate must be registered");
+assert.ok(metricRegistry["hydration_volume"], "hydration_volume must be registered");
+console.log("✅ Metric Registry contains expected types");
+
+console.log("=== All Tests Passed ===");
+

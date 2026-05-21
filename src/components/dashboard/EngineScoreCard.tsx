@@ -38,16 +38,16 @@ export function EngineScoreCard({ scores }: EngineScoreCardProps) {
   return (
     <div className="space-y-6">
       {/* Global Action Priority */}
-      <div className={`p-4 rounded-xl border ${scores.medicalRisk.level !== 'none' ? 'bg-red-50 border-red-200' : 'bg-[#F2F2F7] border-transparent'}`}>
+      <div className={`p-4 rounded-xl border ${scores.riskBoundary.level !== 'none' ? 'bg-red-50 border-red-200' : 'bg-[#F2F2F7] border-transparent'}`}>
         <div className="flex items-start gap-3">
-          {scores.medicalRisk.level !== 'none' ? (
+          {scores.riskBoundary.level !== 'none' ? (
             <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
           ) : (
             <ShieldCheck className="text-[#5856D6] shrink-0 mt-0.5" size={20} />
           )}
           <div>
             <h3 className="font-semibold text-sm mb-1">Priorité d'Action Globale</h3>
-            <p className={`text-sm ${scores.medicalRisk.level !== 'none' ? 'text-red-700 font-medium' : 'text-[#1D1D1F]'}`}>
+            <p className={`text-sm ${scores.riskBoundary.level !== 'none' ? 'text-red-700 font-medium' : 'text-[#1D1D1F]'}`}>
               {scores.globalActionPriority}
             </p>
           </div>
@@ -55,11 +55,11 @@ export function EngineScoreCard({ scores }: EngineScoreCardProps) {
       </div>
 
       {/* Red Flags */}
-      {scores.medicalRisk.flags.length > 0 && (
+      {scores.riskBoundary.flags.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-red-600 uppercase tracking-wider">Drapeaux Médicaux (Red Flags)</h4>
+          <h4 className="text-xs font-bold text-red-600 uppercase tracking-wider">Signaux de Vigilance</h4>
           <ul className="space-y-1">
-            {scores.medicalRisk.flags.map((flag, idx) => (
+            {scores.riskBoundary.flags.map((flag, idx) => (
               <li key={idx} className="text-sm text-red-600 flex items-start gap-2">
                 <span className="mt-1">•</span>
                 <span>{flag}</span>

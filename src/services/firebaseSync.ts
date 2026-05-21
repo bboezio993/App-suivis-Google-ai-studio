@@ -1,6 +1,24 @@
-import { writeBatch, doc } from 'firebase/firestore';
+import { writeBatch, doc, setDoc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { NormalizedMetric, GarminActivity, GarminImportLog, UserProfile } from '../types';
+
+/**
+ * ARCHITECTURE DE DONNÉES / DATA PRIVACY
+ * ====================================
+ * Aura Elite maintient une isolation stricte entre les données physiologiques importées
+ * et les données subjectives sensibles (douleurs actives, cycles menstruels, questionnaires).
+ * 
+ * Modèle Local-Only :
+ * Les logs suivants ne sont JAMAIS synchronisés sur Firestore en version V1 :
+ * - hooperLogs (Etat de forme, humeur)
+ * - painLogs (Douleurs)
+ * - menstrualLogs (Cycles, flux, douleurs localisées)
+ * - contextLogs (Stress, nutrition perçue)
+ * - mealLogs (Repas)
+ * 
+ * Ces données restent confinées à l'IndexedDB du navigateur (local-only).
+ * Seules les métriques passives (Garmin) et le profil général sont synchronisés si configuré.
+ */
 
 export const syncMetricsToFirestore = async (metrics: NormalizedMetric[]) => {
   if (!auth.currentUser) return;
@@ -62,7 +80,6 @@ export const syncLogToFirestore = async (log: GarminImportLog) => {
   }
 };
 
-import { setDoc } from 'firebase/firestore';
 export const syncProfileToFirestore = async (profile: UserProfile) => {
   if (!auth.currentUser) return;
   try {

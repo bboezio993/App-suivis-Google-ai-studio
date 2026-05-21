@@ -20,16 +20,25 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
     });
   });
 
-  const weightKg = state.userProfile?.general?.weight || 70;
-  const bmr = 10 * weightKg + 6.25 * (state.userProfile?.general?.height || 175) - 5 * (state.userProfile?.general?.age || 28) + 5;
+  const weightKg = state.userProfile?.general?.weight;
+  const heightCm = state.userProfile?.general?.height;
+  const age = state.userProfile?.general?.age;
+  const gender = state.userProfile?.general?.gender;
+
+  let bmr: number | null = null;
+  if (weightKg && heightCm && age && gender) {
+     const s = gender === 'female' ? -161 : 5;
+     bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s;
+  }
+
   const activeCalToday = state.metrics
     .filter((m) => (m.type === "active_calories" || m.type === "activity_calories") && m.timestamp.startsWith(todayStr))
     .reduce((a, b) => a + b.value, 0);
 
-  const totalExpenditure = bmr + (activeCalToday || 500);
-  const energyBalance = totalConsCal - totalExpenditure;
+  const totalExpenditure = bmr !== null ? bmr + activeCalToday : null;
+  const energyBalance = totalExpenditure !== null ? totalConsCal - totalExpenditure : null;
 
-  let ffm = 0;
+  let ffm: number | null = null;
   if (state.userProfile?.general?.weight) {
     if ((state.userProfile as any)?.general?.bodyFatPercentage) {
       ffm = state.userProfile.general.weight * (1 - (state.userProfile as any).general.bodyFatPercentage / 100);
@@ -40,8 +49,15 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
     .filter((a) => a.date.startsWith(todayStr))
     .reduce((sum, act) => sum + (act.calories || 0), 0);
   
-  const hasSufficientNutritionData = todayMealLogs.length >= 2 || totalConsCal > 800;
-  const energyAvailability = (ffm > 0 && hasSufficientNutritionData) ? (totalConsCal - activeExerciseCal) / ffm : null;
+  const hasBreakfast = todayMealLogs.some(m => m.mealType === 'breakfast');
+  const hasLunch = todayMealLogs.some(m => m.mealType === 'lunch');
+  const hasDinner = todayMealLogs.some(m => m.mealType === 'dinner');
+  const mealCount = todayMealLogs.length;
+
+  const isDayComplete = hasBreakfast && hasLunch && hasDinner && totalConsCal > 1200;
+  const hasSufficientNutritionData = mealCount >= 3 || isDayComplete;
+  
+  const energyAvailability = (ffm !== null && hasSufficientNutritionData) ? (totalConsCal - activeExerciseCal) / ffm : null;
 
   const dataUsed = ["meal_logs"];
   const dataMissing: string[] = [];
@@ -52,41 +68,50 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   let nutritionScore = 50;
   let confidence = 0;
 
+  if (bmr === null) {
+      limits.push("Dépense de base (BMR) non calculable précisément (profil biométrique incomplet).");
+  }
+
   if (hasSufficientNutritionData) {
-    confidence = 90;
-    const proRatio = Math.min(2, totalPro / (weightKg * 1.6));
-    const carbsRatio = Math.min(2, totalCar / (weightKg * 4));
-    let eaScore = 5;
+    confidence = isDayComplete ? 80 : 50; 
+    
+    const targetWeight = weightKg || 70; // used only for ratios as a fallback, not absolute basal predictions
+    const proRatio = Math.min(2, totalPro / (targetWeight * 1.6));
+    const carbsRatio = Math.min(2, totalCar / (targetWeight * 4));
+    
+    let eaScore = 20; 
     if (energyAvailability !== null) {
       eaScore = energyAvailability >= 30 ? 20 : 5;
     } else {
       limits.push("Disponibilité énergétique non calculable précisément (masse maigre inconnue).");
+      eaScore = 15; // neutral contribution
     }
-    nutritionScore = Math.round((proRatio * 50) + (carbsRatio * 30) + eaScore);
+    
+    nutritionScore = Math.round((proRatio * 40) + (carbsRatio * 40) + eaScore);
     
     positiveDrivers.push({
       metricId: "protein_intake",
       label: "Apport Protéique",
       impact: proRatio >= 0.8 ? "positive" : "neutral",
       value: `${totalPro.toFixed(0)}g`,
-      note: `Ratio : ${(totalPro / weightKg).toFixed(1)}g/kg (cible: 1.6g/kg).`
+      note: weightKg ? `Ratio : ${(totalPro / weightKg).toFixed(1)}g/kg (cible: 1.6g/kg).` : `Total protéique absorbé`
     });
   } else {
     dataMissing.push("meal_logs_today");
-    nutritionScore = 45;
-    confidence = 30;
-    limits.push("Absence de logs alimentaires suffisants pour modéliser précisément le ravitaillement métabolique ou la disponibilité énergétique.");
+    nutritionScore = 50;
+    confidence = mealCount > 0 ? 30 : 0;
+    limits.push("Saisie alimentaire incomplète. Impossible de modéliser avec précision le bilan énergétique.");
   }
 
   nutritionScore = Math.min(100, Math.max(0, nutritionScore));
 
-  let status: "optimal" | "adequate" | "deficit" | "risk" = "adequate";
+  let status: "optimal" | "adequate" | "deficit" | "watch" = "adequate";
   if (nutritionScore > 80) status = "optimal";
-  else if (nutritionScore < 40) status = "risk";
+  else if (nutritionScore < 40) status = "watch";
   else if (nutritionScore < 60) status = "deficit";
 
   let secureWording = "Disponibilité énergétique adéquate pour soutenir l'effort et la régulation cellulaire basale.";
-  if (status === "risk" || status === "deficit") {
+  if (status === "watch" || status === "deficit") {
     secureWording = "Disponibilité énergétique possiblement basse si les apports nutritionnels saisis sont complets.";
   }
 

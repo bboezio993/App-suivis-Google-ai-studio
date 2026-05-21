@@ -48,15 +48,30 @@ export interface MenstrualLog {
   notes: string;
 }
 
+export type MetricId = keyof typeof import("../domain/metrics/metricRegistry").metricRegistry;
+
 export interface NormalizedMetric {
   id: string;
   source: DataSource;
   sourceId?: string; // Reference to the import log or file
   timestamp: string; // ISO 8601
-  type: string; // Cannonical ID defined in metricRegistry
+  type: MetricId | string; // Cannonical ID defined in metricRegistry (string as fallback for parsing until stricted)
   value: number;
   unit: string;
   confidenceScore: number; // 0-100 (Couche A: Qualité de la donnée)
+}
+
+export interface RejectedMetric {
+  id: string;
+  metric: any; // Raw or partial metric
+  reason: string;
+  source: string;
+  timestamp: string;
+  typeProposed: string;
+  value: number;
+  unit: string;
+  confidenceScore: number;
+  importLogId?: string;
 }
 
 // Couche G: Monitoring Quotidien (Hooper Index étendu)
@@ -150,7 +165,7 @@ export interface EngineScores {
   performanceReadiness: {
     score: number;
     confidence: number;
-    status: "optimal" | "normal" | "low" | "danger";
+    status: "optimal" | "normal" | "low" | "reduced" | "caution";
   };
   recoveryStatus: {
     score: number;
@@ -165,18 +180,18 @@ export interface EngineScores {
   nutritionAdequacy: {
     score: number;
     confidence: number;
-    status: "optimal" | "adequate" | "deficit" | "risk";
+    status: "optimal" | "adequate" | "deficit" | "watch";
   };
   psychologicalLoad: {
     score: number;
     confidence: number;
     status: "low" | "moderate" | "high" | "overload";
   };
-  medicalRisk: {
+  riskBoundary: {
     flags: string[];
-    level: "none" | "monitor" | "warning" | "clinical_referral";
+    level: "none" | "monitor" | "warning" | "professional_evaluation";
   };
-  globalActionPriority: string; // ex: "Priorité Sommeil", "Feu Vert Entraînement", "Risque RED-S"
+  globalActionPriority: string; // ex: "Priorité Sommeil", "Feu Vert Entraînement", "Vigilance Charge"
   acwr?: number; // Acute:Chronic Workload Ratio
   trends?: {
     hrv: "up" | "down" | "stable";

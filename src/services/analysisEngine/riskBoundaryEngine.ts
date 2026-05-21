@@ -3,7 +3,7 @@ import { ModularEngineResult } from "./types";
 
 export interface RiskEngineResult {
   flags: string[];
-  level: "none" | "monitor" | "warning" | "clinical_referral";
+  level: "none" | "monitor" | "warning" | "professional_evaluation";
   globalActionPriority: string;
 }
 
@@ -50,7 +50,7 @@ export function runRiskBoundaryEngine(
   }
 
   // 5. Energy availability check (under-fueling)
-  const isNutritionDeficit = nutritionRes.status === "risk" || nutritionRes.status === "deficit";
+  const isNutritionDeficit = nutritionRes.status === "watch" || nutritionRes.status === "deficit";
   if (isNutritionDeficit) {
     flags.push("Disponibilité énergétique possiblement basse si les apports saisis sont complets.");
   }
@@ -60,9 +60,9 @@ export function runRiskBoundaryEngine(
     flags.push("Données insuffisantes pour conclure à un risque individuel précis.");
   }
 
-  let level: "none" | "monitor" | "warning" | "clinical_referral" = "none";
+  let level: "none" | "monitor" | "warning" | "professional_evaluation" = "none";
   if (flags.length >= 3) {
-    level = "clinical_referral";
+    level = "professional_evaluation";
   } else if (flags.length > 0) {
     level = "warning";
   } else if (trainingRes.status === "underloaded" || sleepRes.status === "debt") {
@@ -71,7 +71,7 @@ export function runRiskBoundaryEngine(
 
   // Define action priorities adhering strictly to prudent, non-clinical french formulations:
   let globalActionPriority = "Maintien : Poursuivre la planification standard de l'entraînement.";
-  if (level === "clinical_referral") {
+  if (level === "professional_evaluation") {
     globalActionPriority = "Vigilance : Signal de surcharge à surveiller. Si ce signal persiste, une évaluation professionnelle peut être pertinente.";
   } else if (level === "warning") {
     globalActionPriority = "Recommandation : Adaptation prudente de la charge d'entraînement recommandée de manière préventive.";

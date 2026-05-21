@@ -23,11 +23,12 @@ import {
 } from 'lucide-react';
 
 export function Connections() {
-  const [activeTab, setActiveTab] = useState<'garmin' | 'manual' | 'derived'>('garmin');
+  const [activeTab, setActiveTab] = useState<'garmin' | 'manual' | 'derived' | 'quality'>('garmin');
   const garminImportLogs = useStore(state => state.garminImportLogs);
   const engineScores = useStore(state => state.engineScores);
   const metrics = useStore(state => state.metrics);
   const activities = useStore(state => state.garminActivities);
+  const rejectedMetrics = useStore(state => state.rejectedMetrics || []);
 
   // Compute coverage percentages of metrics for the last 7 days
   const recentMetrics = metrics.filter(m => {
@@ -50,7 +51,7 @@ export function Connections() {
             Sources & Données
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Gérez vos siphons de données Garmin, remplissez vos formulaires quotidiens et auditez la qualité de vos baselines physiologiques.
+            Gérez vos sources de données, remplissez vos formulaires quotidiens et auditez la qualité des métriques.
           </p>
         </div>
         <Badge variant="outline" className="w-fit border-indigo-500/30 bg-indigo-500/10 text-indigo-400 font-mono py-1 px-2 text-xs">
@@ -59,7 +60,7 @@ export function Connections() {
       </div>
 
       {/* Tabs navigation */}
-      <div className="flex gap-4 border-b border-border/80 pb-3 mb-8">
+      <div className="flex gap-4 border-b border-border/80 pb-3 mb-8 overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setActiveTab('garmin')}
           className={`pb-3 text-base font-semibold transition-all relative ${
@@ -96,6 +97,19 @@ export function Connections() {
           <div className="flex items-center gap-2">
             <Cpu size={18} />
             Données Calculées
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('quality')}
+          className={`pb-3 text-base font-semibold transition-all relative ${
+            activeTab === 'quality' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {activeTab === 'quality' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+          <div className="flex items-center gap-2">
+            <Shield size={18} />
+            Qualité & Quarantaine
           </div>
         </button>
       </div>
@@ -237,6 +251,50 @@ export function Connections() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'quality' && (
+        <div className="space-y-6">
+          <div className="bento-card border border-red-500/20 bg-red-500/5 p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono tracking-wider text-red-600 font-bold uppercase">Quarantaine de données</span>
+              <h3 className="text-xl font-bold">Données rejetées par l'algorithme</h3>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Aura Elite refuse d'utiliser des données aberrantes, incohérentes temporellement ou absentes de son registre stricts. Les données ci-dessous ont été exclues des modèles de calculs pour protéger votre profil des hallucinations algorithmiques.
+              </p>
+            </div>
+          </div>
+
+          <div className="bento-card p-6">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <AlertCircle size={18} className="text-red-500" />
+              Journal des rejets ({rejectedMetrics.length})
+            </h3>
+            {rejectedMetrics.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Aucune donnée n'a été rejetée par le moteur. Vos saisies et vos imports sont propres.</p>
+            ) : (
+              <div className="space-y-3">
+                {rejectedMetrics.map((r, i) => (
+                  <div key={i} className="flex flex-col md:flex-row justify-between md:items-center gap-3 p-3 bg-secondary/20 rounded-lg border border-border/50">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-foreground">{r.metric.type || "Inconnu"}</span>
+                        <Badge variant="outline" className="text-[10px] font-mono">{r.metric.source}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Valeur : <span className="font-mono">{r.metric.value} {r.metric.unit}</span> — Le <span className="font-mono">{new Date(r.metric.timestamp).toLocaleString()}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-red-500 uppercase">Motif du rejet</span>
+                      <p className="text-xs text-muted-foreground">{r.reason}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

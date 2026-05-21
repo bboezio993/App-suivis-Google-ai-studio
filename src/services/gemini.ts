@@ -83,9 +83,9 @@ export async function analyzeHealthData(
     let mappedStatus: "optimal" | "stable" | "strained" | "critical" = "stable";
     if (calculatedScores.performanceReadiness.status === "optimal") {
        mappedStatus = "optimal";
-    } else if (calculatedScores.performanceReadiness.status === "danger") {
+    } else if (calculatedScores.performanceReadiness.status === "caution") {
        mappedStatus = "critical";
-    } else if (calculatedScores.performanceReadiness.status === "low") {
+    } else if (calculatedScores.performanceReadiness.status === "reduced" || calculatedScores.performanceReadiness.status === "low") {
        mappedStatus = "strained";
     }
 
@@ -104,8 +104,8 @@ export async function analyzeHealthData(
     // Safe deterministic fallback completely independent of API failure
     let mappedStatus: "optimal" | "stable" | "strained" | "critical" = "stable";
     if (calculatedScores.performanceReadiness.status === "optimal") mappedStatus = "optimal";
-    else if (calculatedScores.performanceReadiness.status === "danger") mappedStatus = "critical";
-    else if (calculatedScores.performanceReadiness.status === "low") mappedStatus = "strained";
+    else if (calculatedScores.performanceReadiness.status === "caution") mappedStatus = "critical";
+    else if (calculatedScores.performanceReadiness.status === "reduced" || calculatedScores.performanceReadiness.status === "low") mappedStatus = "strained";
 
     return {
       readinessScore: calculatedScores.performanceReadiness.score,

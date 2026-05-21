@@ -1,6 +1,6 @@
 # Aura Elite
 
-Aura Elite est une plateforme personnelle de monitoring destinée aux athlètes de haut niveau (et passionnés exigeants) visant l'optimisation de la performance, l'équilibre de la charge d'entraînement, et la prévention du surentraînement.
+Aura Elite est une plateforme personnelle de monitoring destinée aux athlètes de haut niveau (et passionnés exigeants) visant l'optimisation de la performance, l'équilibre de la charge d'entraînement, et le suivi des signaux de charge et récupération.
 
 ## Périmètre du Projet
 
@@ -11,8 +11,13 @@ Aura Elite se positionne comme un agrégateur et moteur d’analyse déterminist
 
 **Architecture et Philosophie :**
 - **Déterministe & Transparent** : Aucun "score magique" généré par une IA. Tous les calculs sont mathématiques et affichent les "drivers" exacts qui les composent (Data Used, Data Missing, Limits).
-- **Prudence & Non-Médical** : Aura Elite propose des *recommandations* et des *évaluations de risques* (ex: RED-S ou disponibilité énergétique) en conservant un wording très prudent ("signal de vigilance", "adaptation recommandée"). Aucun diagnostic n'est posé.
+- **Prudence & Non-Médical** : Aura Elite propose des *recommandations* et des *signaux de vigilance* (ex: disponibilité énergétique à interpréter prudemment) en conservant un wording très prudent ("signal de vigilance", "adaptation recommandée"). Aucun diagnostic n'est posé.
 - **Explainability Layer** : Les rapports sous forme de textes destinés aux athlètes sont d'abord structurés par un moteur interne, puis reformulés de façon pédagogique en bout de chaîne (ex: Gemini) – uniquement à des fins de *rewrite* littéraire, sans liberté d'action sur les tendances ni sur les chiffres.
+
+## Cadre Strictement Non Médical
+
+Aura Elite est un outil logiciel conçu exclusivement pour l'optimisation de la performance sportive et le bien-être. Les analyses affichées dépendent entièrement de la qualité des données tierces (Garmin) et subjectives saisies par l'utilisateur. 
+L'application ne pose aucun diagnostic, ne traite aucune pathologie et n'offre aucun avis médical. En cas de douleur aiguë ou de symptômes persistants, l'application suggère d'observer une prudence accrue et de recourir à une évaluation professionnelle.
 
 ## Moteur Modulaire (Analysis Engine)
 
@@ -22,20 +27,27 @@ La chaîne de calcul est séparée en sous-moteurs distincts :
 - **Sleep Engine** : Agrège durée, score, dette de sommeil et RHR nocturne.
 - **Recovery Engine** : Fusionne HRV, RHR, et logs subjectifs (Hooper).
 - **Nutrition/Context/Mental Engines** : Modélisent le bilan énergétique, le stress et les contraintes externes (voyages, alcool, examens).
-- **Readiness Engine & Risk Boundary** : Calculent le score final de disponibilité et évaluent les exceptions cliniques (ex: blessure extrême ou indisposition signalée).
+- **Readiness Engine & Risk Boundary** : Calculent le score final de disponibilité et évaluent les situations nécessitant prudence ou évaluation professionnelle (ex: douleur extrême isolée).
 
-## Données & Vie Privée (Firebase / Local)
+## Qualité des données (Data Quality)
 
-Aura Elite suit une conception Data Priority :
-- En version Web/Preview : les données sont conservées localement dans `IndexedDB` (persist-middleware de Zustand).
-- Si configuré, la synchronisation avec **Firebase Firestore** est active mais requise derrière des Règles de Sécurité fortes (seul l'utilisateur authentifié accède à ses profils, métriques, journaux subjectifs et imports).
+Chaque donnée ingérée passe par un évaluateur de qualité (couche `assessDataQuality`) mesurant son intégrité, sa fraîcheur temporelle et sa cohérence de source. Le score assigné à chaque métrique (0-100) va par la suite influencer les intervalles de calcul de la plateforme, plafonnant la certitude des moteurs en cas de contexte faible ou partiellement renseigné.
 
-## Prochaines Étapes / Roadmap
+## Données rejetées / Quarantaine
 
-- Intégration complète de portions alimentaires, base d'ingrédients détaillés et affinage de la Disponibilité Énergétique (EA).
-- Implémentation de Firebase Auth pour le déploiement sur plusieurs terminaux.
-- Extension du support FIT pour les courbes de puissance Garmin très haute révolution.
-- Développement de l'infrastructure de notifications.
+Aucune information ne disparaît sans laisser de trace :
+Les valeurs détectées comme aberrantes ou dont les attributs ne matchent pas le registre strict de l'application (finalConfidence < 50) sont orientées vers une quarantaine systémique (`rejectedMetrics`). Ces données exclues restent vérifiables en vue d'audit (diagnostic des sources, anomalies des parsers ou saisies hasardeuses de l'utilisateur).
+
+## Données complexes, Architecture & Vie Privée
+
+Aura Elite suit une conception de stockage local prioritaire :
+- En version Web/Preview : les données subjectives, incluant les questionnaires de forme physiologiques, douleurs, repas et constantes féminines sont conservées localement dans `IndexedDB` en mode `local-only` pour une sécurité maximale durant les itérations.
+- Si le déploiement de **Firebase Firestore** est activé : la synchronisation nécessitera alors le renforcement de toutes les collections log avec des Règles de Sécurité fortes isolant strictement chaque profil.
+
+## Nutrition : Limites actuelles
+
+Pour maintenir une fiabilité analytique, le modèle énergétique actuel exige une base de profils corporels complète (poids, taille, masse grasse). Sans ces informations, l'application neutralise le niveau de certitude quant au risque de déficit et bloque ses estimations.
+Une feuille de route (Nutrition V1 Solide) prévoit l’intégration prochaine d'une base nutritionnelle canonique (micro et macro) gérant cru/cuit et portions exactes sans baser la recommandation sur des algorithmes génératifs, et gérée de manière complètement interne.
 
 ## Tests
-Pour exécuter les cas de test ou validators internes, référez-vous aux scripts NPM fournis. La plateforme dispose d'un framework d'analyse qualitatif des données (Q/A `assessDataQuality`).
+Un script dédié (`npm run test`) couvre la prévention d'erreurs déterministes sur des snapshots fixes, validant les blocages liés à la composition corporelle, le rejet qualifié des métriques fautives, ou le respect des contraintes d'IA.

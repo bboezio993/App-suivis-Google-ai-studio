@@ -24,13 +24,13 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
     dataUsed.push("acwr");
     if (numericAcwr >= 0.8 && numericAcwr <= 1.3) {
       readinessScore += 20;
-      positiveDrivers.push({ metricId: "acwr", value: numericAcwr, contribution: 20 });
+      positiveDrivers.push({ metricId: "acwr", label: "ACWR", value: numericAcwr, impact: "positive", note: "Dans la zone d'adaptation" });
     } else if (numericAcwr > 1.5) {
       readinessScore -= 30;
-      negativeDrivers.push({ metricId: "acwr", value: numericAcwr, contribution: -30 });
+      negativeDrivers.push({ metricId: "acwr", label: "ACWR", value: numericAcwr, impact: "negative", note: "Surcharge détectée" });
     } else if (numericAcwr < 0.8) {
       readinessScore -= 10;
-      negativeDrivers.push({ metricId: "acwr", value: numericAcwr, contribution: -10 });
+      negativeDrivers.push({ metricId: "acwr", label: "ACWR", value: numericAcwr, impact: "negative", note: "Sous-entraînement relatif" });
     }
   } else {
     dataMissing.push("acwr");
@@ -41,9 +41,9 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
     readinessScore = (readinessScore + recoveryRes.score) / 2;
     dataUsed.push("recovery_score");
     if (recoveryRes.score > 70) {
-      positiveDrivers.push({ metricId: "recovery_score", value: recoveryRes.score, contribution: 15 });
+      positiveDrivers.push({ metricId: "recovery_score", label: "Récupération", value: recoveryRes.score, impact: "positive", note: "Récupération suffisante" });
     } else if (recoveryRes.score < 40) {
-      negativeDrivers.push({ metricId: "recovery_score", value: recoveryRes.score, contribution: -15 });
+      negativeDrivers.push({ metricId: "recovery_score", label: "Récupération", value: recoveryRes.score, impact: "negative", note: "Récupération limitée" });
     }
   } else {
     dataMissing.push("recovery_score");
@@ -58,11 +58,11 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
     dataUsed.push("hooper_log");
     if (latestHooper.fatigue >= 6) {
       readinessScore -= 15;
-      negativeDrivers.push({ metricId: "subjective_fatigue", value: latestHooper.fatigue, contribution: -15 });
+      negativeDrivers.push({ metricId: "subjective_fatigue", label: "Fatigue Perçue", value: latestHooper.fatigue, impact: "negative", note: "Fatigue importante" });
     }
     if (latestHooper.soreness >= 6) {
       readinessScore -= 10;
-      negativeDrivers.push({ metricId: "subjective_soreness", value: latestHooper.soreness, contribution: -10 });
+      negativeDrivers.push({ metricId: "subjective_soreness", label: "Douleurs", value: latestHooper.soreness, impact: "negative", note: "Courbatures importantes" });
     }
   } else {
     dataMissing.push("hooper_log");
@@ -72,7 +72,7 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
   const maxPainIntensity = activePainLogs.reduce((max, log) => Math.max(max, log.intensityActive, log.intensityRest), 0);
   if (maxPainIntensity >= 7) {
     readinessScore = Math.min(30, readinessScore);
-    negativeDrivers.push({ metricId: "pain_score", value: maxPainIntensity, contribution: -50 });
+    negativeDrivers.push({ metricId: "pain_score", label: "Douleur Aiguë", value: maxPainIntensity, impact: "negative", note: "Plafond préventif appliqué" });
     dataUsed.push("pain_score");
     limits.push("La douleur a plafonné le score de readiness de manière préventive.");
   }
@@ -80,7 +80,7 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
   const checkinWithIllness = state.hooperLogs.find((l) => (l.date === todayStr || l.date === yesterdayStr) && (l.isIll === true || l.notes?.toLowerCase().includes("malade")));
   if (checkinWithIllness) {
     readinessScore = Math.min(25, readinessScore);
-    negativeDrivers.push({ metricId: "illness_symptoms", value: 1, contribution: -50 });
+    negativeDrivers.push({ metricId: "illness_symptoms", label: "Maladie", value: 1, impact: "negative", note: "Symptômes déclarés" });
     dataUsed.push("illness_symptoms");
     limits.push("Symptômes de maladie déclarés : readiness plafonnée de manière protectrice.");
   }
@@ -89,7 +89,7 @@ export function runReadinessEngine(state: AppState, recoveryRes: ModularEngineRe
 
   let readinessStatus = "normal";
   if (numericAcwr > 1.5 || recoveryRes.score < 20 || maxPainIntensity >= 7) {
-    readinessStatus = "danger";
+    readinessStatus = "caution";
   } else if (readinessScore > 75) {
     readinessStatus = "optimal";
   } else if (readinessScore > 40) {

@@ -43,14 +43,21 @@ import { EngineScoreCard } from '../components/dashboard/EngineScoreCard';
 import { useStore } from '../store/useStore';
 import { generatePersonalizedRecommendations } from '../domain/recommendations/recommendationEngine';
 
+import { runExplainabilityLayer } from '../services/analysisEngine/explainabilityLayer';
+
 export function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const { metrics, garminActivities, engineScores, computeEngineScores, userProfile } = useStore();
+  const storeState = useStore();
+  const { metrics, garminActivities, engineScores, computeEngineScores, userProfile } = storeState;
 
   const personalizedRecs = useMemo(() => {
     return generatePersonalizedRecommendations(useStore.getState(), engineScores);
   }, [engineScores, metrics]);
+
+  const fallbackExplainability = useMemo(() => {
+    return runExplainabilityLayer(useStore.getState());
+  }, [engineScores]);
 
   // Run engine on mount if needed
   useEffect(() => {
@@ -198,17 +205,30 @@ export function Dashboard() {
                     <Zap size={18} className="text-[#0071E3]" />
                     Synthèse pédagogique
                   </h3>
+                  
                   {analysis ? (
-                    <p className="text-[#1D1D1F] leading-relaxed">
-                      {analysis.summary}
-                    </p>
+                    <div className="space-y-4">
+                      <p className="text-[#1D1D1F] leading-relaxed">
+                        {analysis.summary}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CheckCircle2 size={12} /> Reformulé par IA
+                      </p>
+                    </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">Lancez l'analyse pour obtenir votre synthèse personnalisée.</p>
-                      <Button onClick={handleRefreshAnalysis} disabled={loading} className="bg-[#0071E3] text-white hover:bg-[#0071E3]/90">
-                        {loading ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
-                        Générer l'analyse
-                      </Button>
+                    <div className="space-y-4">
+                      <p className="text-[#1D1D1F] leading-relaxed font-medium">
+                        {fallbackExplainability.shortSummary}
+                      </p>
+                      <p className="text-[#1D1D1F] leading-relaxed text-muted-foreground">
+                        {fallbackExplainability.naturalLanguageExplanation}
+                      </p>
+                      <div className="pt-2">
+                        <Button onClick={handleRefreshAnalysis} disabled={loading} size="sm" variant="outline" className="gap-2">
+                          {loading ? <RefreshCw className="animate-spin" size={14} /> : <Brain size={14} />}
+                          Reformuler avec Gemini
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
