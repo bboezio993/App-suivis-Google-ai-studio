@@ -58,7 +58,6 @@ export interface NormalizedMetric {
     | "rhr"
     | "sleep_duration"
     | "sleep_efficiency"
-    | "sleep_quality"
     | "rpe"
     | "acwr"
     | "stress"
@@ -100,6 +99,12 @@ export interface HooperLog {
   sleepQuality: number; // 1-7 (1 = Excellent, 7 = Très mauvais)
   soreness: number; // 1-7 (1 = Aucune douleur, 7 = Très douloureux)
   mood: number; // 1-7 (1 = Très motivé/Heureux, 7 = Déprimé/Apathique)
+  motivation?: number; // 1-7
+  painLevel?: number; // 0-10
+  digestion?: number; // 1-5
+  appetite?: number; // 1-5
+  recovery?: number; // 1-10
+  isIll?: boolean;
   notes?: string;
 }
 
@@ -112,6 +117,32 @@ export interface SessionRPE {
   durationMinutes: number;
   feeling: number; // 1-5 (1 = Très mauvais, 5 = Très bon)
   pain?: string; // Localisation douleur si existante
+  muscularLoad?: number; // 0-10
+  cardioLoad?: number; // 0-10
+  painDuring?: boolean;
+  postPainIntensity?: number; // 0-10
+  techniqueSensation?: number; // 1-5
+  conformanceToPlan?: boolean;
+  comment?: string;
+}
+
+// Couche D: Contexte de Vie
+export interface LifeContextLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  travel: boolean;
+  jetlag: boolean;
+  alcohol: boolean;
+  lateMeal: boolean;
+  heat: boolean;
+  altitude: boolean;
+  stressEx: boolean;
+  exams: boolean;
+  meds: boolean;
+  cycle: boolean;
+  competition: boolean;
+  interruptedNight: boolean;
+  notes?: string;
 }
 
 // Couche G: Screening Hebdomadaire (Santé Mentale)
@@ -290,5 +321,7 @@ export interface PainLog {
   relievedBy?: string;
   impact: string; // 'none' | 'modified_training' | 'no_training'
   notes?: string;
+  evolutionTime?: string; // progressive, stable, improvement, healing
+  historyEpisodes?: string; // first occurrence, recurring
 }
 

@@ -73,7 +73,7 @@ export function assessDataQuality(metric: NormalizedMetric, currentTimestamp = n
         artifactRisk = "medium";
       }
       break;
-    case "sleep_quality": // Garmin sleep score or subjective
+    case "sleep_score": // Garmin sleep score
       if (val < 0 || val > 100) {
         plausibility = 0;
         flags.push("SCORE_SOMMEIL_HORS_RANG_0_100");
@@ -96,7 +96,7 @@ export function assessDataQuality(metric: NormalizedMetric, currentTimestamp = n
 
   // Additional rules from the brief
   // Rule A: Garmin sleep with score but without duration -> flag
-  if (metric.source === "garmin" && metric.type === "sleep_quality" && metric.value > 0) {
+  if (metric.source === "garmin" && metric.type === "sleep_score" && metric.value > 0) {
     // Let caller layer metrics checks. If duration is checked together, list flag
   }
 

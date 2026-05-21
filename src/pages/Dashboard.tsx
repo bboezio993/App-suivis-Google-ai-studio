@@ -73,7 +73,7 @@ export function Dashboard() {
         hrv: recentMetrics.find(m => m.type === 'hrv_rmssd')?.value || 0,
         rhr: recentMetrics.find(m => m.type === 'rhr')?.value || 0,
         sleepDuration: recentMetrics.find(m => m.type === 'sleep_duration')?.value || 0,
-        sleepQuality: recentMetrics.find(m => m.type === 'sleep_quality')?.value || 0,
+        sleepQuality: recentMetrics.find(m => m.type === 'sleep_score')?.value || 0,
         rpe: recentMetrics.find(m => m.type === 'rpe')?.value || 0,
         stressLevel: recentMetrics.find(m => m.type === 'stress')?.value || 0,
         mood: 'Neutral',

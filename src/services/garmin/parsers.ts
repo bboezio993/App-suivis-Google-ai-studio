@@ -418,7 +418,7 @@ export const parseWellnessJSON = async (jsonString: string, logId: string) => {
           source: 'garmin',
           sourceId: logId,
           timestamp,
-          type: 'sleep_quality',
+          type: 'sleep_score',
           value: Number(finalScore),
           unit: '/100',
           confidenceScore: 90

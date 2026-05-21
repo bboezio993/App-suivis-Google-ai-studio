@@ -114,7 +114,13 @@ function DailyCheckInForm({ onSuccess }: FormProps) {
       sleepQuality: sleep,
       soreness,
       mood,
-      notes: `${notes}${isIll ? ' [Malade signalé]' : ''}`
+      motivation,
+      painLevel,
+      digestion,
+      appetite,
+      recovery,
+      isIll,
+      notes
     });
 
     // Populate separate metric indices
@@ -359,7 +365,14 @@ function PostSessionRPEForm({ onSuccess }: FormProps) {
       rpe,
       durationMinutes: durationMin,
       feeling: technique,
-      pain: painDuring ? painLocation : undefined
+      pain: painDuring ? painLocation : undefined,
+      muscularLoad: muscLoad,
+      cardioLoad: cardioLoad,
+      painDuring,
+      postPainIntensity: postPain,
+      techniqueSensation: technique,
+      conformanceToPlan: comform,
+      comment
     });
 
     setSuccess(true);
@@ -516,6 +529,10 @@ function PainInjuryForm({ onSuccess }: FormProps) {
   const [onset, setOnset] = useState<'onset_sudden' | 'onset_gradual'>('onset_gradual');
   const [impact, setImpact] = useState('none');
   const [notes, setNotes] = useState('');
+  const [aggravatedBy, setAggravatedBy] = useState('');
+  const [relievedBy, setRelievedBy] = useState('');
+  const [evolutionTime, setEvolutionTime] = useState('stable');
+  const [historyEpisodes, setHistoryEpisodes] = useState('first_occurrence');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -531,7 +548,11 @@ function PainInjuryForm({ onSuccess }: FormProps) {
       intensityActive: intEffort,
       onset,
       impact,
-      notes
+      notes,
+      aggravatedBy: aggravatedBy || undefined,
+      relievedBy: relievedBy || undefined,
+      evolutionTime: evolutionTime || undefined,
+      historyEpisodes: historyEpisodes || undefined
     });
 
     setSuccess(true);
@@ -612,6 +633,52 @@ function PainInjuryForm({ onSuccess }: FormProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="text-xs font-semibold block mb-1">Facteurs aggravants :</label>
+              <input
+                type="text" value={aggravatedBy} onChange={(e) => setAggravatedBy(e.target.value)}
+                placeholder="Ex: montée d'escaliers, course rapide"
+                className="w-full text-xs rounded border border-border bg-background p-2"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold block mb-1">Facteurs soulageants :</label>
+              <input
+                type="text" value={relievedBy} onChange={(e) => setRelievedBy(e.target.value)}
+                placeholder="Ex: étirements, repos, glaçage"
+                className="w-full text-xs rounded border border-border bg-background p-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold block mb-1">Évolution récente :</label>
+              <select
+                value={evolutionTime} onChange={(e) => setEvolutionTime(e.target.value)}
+                className="w-full text-xs rounded border border-border bg-background p-2"
+              >
+                <option value="progressive">S'aggrave progressivement ⚠️</option>
+                <option value="stable">Stable</option>
+                <option value="improving">S'améliore gentiment 📈</option>
+                <option value="healing">En voie de guérison complète ✨</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold block mb-1">Historique des épisodes :</label>
+              <select
+                value={historyEpisodes} onChange={(e) => setHistoryEpisodes(e.target.value)}
+                className="w-full text-xs rounded border border-border bg-background p-2"
+              >
+                <option value="first_occurrence">Premier épisode de cette douleur</option>
+                <option value="recurring">Douleur récurrente / habituelle</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="text-xs font-semibold block mb-1">Intensité repos (0-10) :</label>
               <input
                 type="number" min="0" max="10" value={intRest}
@@ -657,6 +724,7 @@ function PainInjuryForm({ onSuccess }: FormProps) {
 
 function ContextForm({ onSuccess }: FormProps) {
   const addMetric = useStore(state => state.addMetric);
+  const addContextLog = useStore(state => state.addContextLog);
   const [success, setSuccess] = useState(false);
 
   // Checkboxes for various context factors
@@ -678,9 +746,23 @@ function ContextForm({ onSuccess }: FormProps) {
     e.preventDefault();
     const dateStr = new Date().toISOString().split('T')[0];
 
-    const contextObject = {
-      travel, jetlag, alcohol, lateMeal, heat, altitude, stressEx, exams, meds, cycle, competition, interruptedNight, notes
-    };
+    addContextLog({
+      id: `context_${Date.now()}`,
+      date: dateStr,
+      travel,
+      jetlag,
+      alcohol,
+      lateMeal,
+      heat,
+      altitude,
+      stressEx,
+      exams,
+      meds,
+      cycle,
+      competition,
+      interruptedNight,
+      notes
+    });
 
     addMetric({
       id: `m_context_${Date.now()}`,

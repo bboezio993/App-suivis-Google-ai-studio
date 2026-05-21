@@ -342,7 +342,7 @@ export const runAnalysisEngine = (state: AppState): EngineScores => {
   }
 
   // Illness symptom capping
-  const checkinWithIllness = state.hooperLogs.find(l => l.date === todayStr && l.notes?.toLowerCase().includes("malade"));
+  const checkinWithIllness = state.hooperLogs.find(l => (l.date === todayStr || l.date === yesterdayStr) && (l.isIll === true || l.notes?.toLowerCase().includes("malade")));
   if (checkinWithIllness) {
     readinessScore = Math.min(25, readinessScore); 
     scores.medicalRisk.flags.push("Symptômes de maladie signalés.");

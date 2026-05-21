@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, EngineScores, WeeklyScreeningLog, MealLog, PainLog } from '../types';
+import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
 import { syncMetricsToFirestore, syncLogToFirestore, syncProfileToFirestore, syncActivitiesToFirestore } from '../services/firebaseSync';
 
@@ -30,6 +30,7 @@ export interface AppState {
   weeklyScreeningLogs: WeeklyScreeningLog[];
   mealLogs: MealLog[];
   painLogs: PainLog[];
+  contextLogs: LifeContextLog[];
   engineScores: EngineScores | null;
   addMetric: (metric: NormalizedMetric) => void;
   addMetrics: (metrics: NormalizedMetric[]) => void;
@@ -44,6 +45,7 @@ export interface AppState {
   addWeeklyScreeningLog: (log: WeeklyScreeningLog) => void;
   addMealLog: (log: MealLog) => void;
   addPainLog: (log: PainLog) => void;
+  addContextLog: (log: LifeContextLog) => void;
   computeEngineScores: () => void;
 }
 
@@ -74,6 +76,7 @@ export const useStore = create<AppState>()(
       weeklyScreeningLogs: [],
       mealLogs: [],
       painLogs: [],
+      contextLogs: [],
       engineScores: null,
       addMetric: (metric) => {
         set((state) => ({ metrics: [...state.metrics, metric] }));
@@ -172,6 +175,13 @@ export const useStore = create<AppState>()(
         set((state) => {
           const filtered = state.painLogs.filter(l => l.id !== log.id);
           return { painLogs: [...filtered, log] };
+        });
+        get().computeEngineScores();
+      },
+      addContextLog: (log) => {
+        set((state) => {
+          const filtered = state.contextLogs.filter(l => l.id !== log.id);
+          return { contextLogs: [...filtered, log] };
         });
         get().computeEngineScores();
       },

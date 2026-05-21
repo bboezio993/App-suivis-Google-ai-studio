@@ -241,7 +241,7 @@ const processCSV = async (file: File, logId: string, updateLog: any) => {
                   source: 'garmin',
                   sourceId: logId,
                   timestamp,
-                  type: 'sleep_quality',
+                  type: 'sleep_score',
                   value: score,
                   unit: '/100',
                   confidenceScore: 90
