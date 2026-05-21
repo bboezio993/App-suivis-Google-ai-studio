@@ -45,14 +45,22 @@ export function Nutrition() {
   });
 
   // Calculate Garmin-based expenditures
+  const dailyActiveCalFromMetrics = metrics.find(m => m.type === "active_calories" && m.timestamp.startsWith(todayStr))?.value || 0;
+  const dailyActivityCalFromSessions = garminActivities
+    .filter(a => a.date.startsWith(todayStr))
+    .reduce((acc, a) => acc + (a.calories || 0), 0);
+  
   const recentActivities = garminActivities.slice(0, 7);
   const avgActiveCal = recentActivities.length > 0 
     ? recentActivities.reduce((acc, a) => acc + (a.calories || 0), 0) / recentActivities.length
     : 450;
 
+  const activeBurn = dailyActiveCalFromMetrics > 0 ? dailyActiveCalFromMetrics : (dailyActivityCalFromSessions > 0 ? dailyActivityCalFromSessions : avgActiveCal);
+
   const weightKg = userProfile?.general?.weight || 68;
   const bmr = Math.round(10 * weightKg + 6.25 * (userProfile?.general?.height || 172) - 5 * (userProfile?.general?.age || 26) + 4);
-  const targetCalories = Math.round(bmr + avgActiveCal);
+  const targetCalories = Math.round(bmr + activeBurn);
+  const energyBalance = dailyCalories - targetCalories;
 
   // Dynamic targets (1.8g/kg protein, 4g/kg carbohydrate, 1g/kg fat)
   const targetProtein = Math.round(weightKg * 1.8);
@@ -93,24 +101,26 @@ export function Nutrition() {
 
       {/* Main dashboard widgets */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Calories Ring */}
-        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+        {/* Calories Ring & Balance */}
+        <div className="bento-card p-6 border border-border/60">
           <div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Calories ingérées</span>
-            <span className="text-3xl font-black font-mono block mt-1 text-emerald-500">
-              {dailyCalories} <span className="text-xs font-normal text-muted-foreground">/ {targetCalories} kcal</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Balance Énergétique</span>
+            <span className={`text-3xl font-black font-mono block mt-1 ${energyBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+              {energyBalance > 0 ? '+' : ''}{energyBalance} <span className="text-xs font-normal text-muted-foreground">kcal</span>
             </span>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5 mt-4">
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-              <span>Objectif de base atteint :</span>
-              <span>{Math.round(Math.min(100, (dailyCalories / targetCalories) * 100))}%</span>
+              <span>Apports (Alimentation) :</span>
+              <span className="text-emerald-500">+{dailyCalories}</span>
             </div>
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-emerald-500 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (dailyCalories / targetCalories) * 100)}%` }} 
-              />
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Métabolisme (BMR) :</span>
+              <span className="text-red-400">-{bmr}</span>
+            </div>
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              <span>Dépense Active (Garmin) :</span>
+              <span className="text-red-400">-{Math.round(activeBurn)}</span>
             </div>
           </div>
         </div>

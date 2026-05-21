@@ -53,47 +53,7 @@ export interface NormalizedMetric {
   source: DataSource;
   sourceId?: string; // Reference to the import log or file
   timestamp: string; // ISO 8601
-  type:
-    | "hrv_rmssd"
-    | "rhr"
-    | "sleep_duration"
-    | "sleep_efficiency"
-    | "rpe"
-    | "acwr"
-    | "stress_score"
-    | "subjective_stress"
-    | "subjective_sleep_quality"
-    | "subjective_soreness"
-    | "subjective_mood"
-    | "subjective_fatigue"
-    | "motivation"
-    | "pain_score"
-    | "digestive_comfort"
-    | "appetite"
-    | "energy_level"
-    | "notes_context"
-    | "spo2"
-    | "respiration_rate"
-    | "vo2max"
-    | "ftp"
-    | "lthr"
-    | "sleep_score"
-    | "hydration_volume"
-    | "activity_calories"
-    | "active_calories"
-    | "energy_intake_kcal"
-    | "energy_balance"
-    | "energy_availability"
-    | "training_load"
-    | "steps"
-    | "body_battery"
-    | "body_weight"
-    | "weight"
-    | "menstrual_flow"
-    | "menstrual_pain"
-    | "cycle_symptoms"
-    | "urine_color"
-    | "session_rpe_load";
+  type: string; // Cannonical ID defined in metricRegistry
   value: number;
   unit: string;
   confidenceScore: number; // 0-100 (Couche A: Qualité de la donnée)

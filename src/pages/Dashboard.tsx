@@ -65,23 +65,7 @@ export function Dashboard() {
     // Keep the Gemini analysis for the text summary/recommendations
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const recentMetrics = metrics.filter(m => m.timestamp.startsWith(today));
-      
-      const mockDaily: DailyMetrics = {
-        date: today,
-        hrv: recentMetrics.find(m => m.type === 'hrv_rmssd')?.value || 0,
-        rhr: recentMetrics.find(m => m.type === 'rhr')?.value || 0,
-        sleepDuration: recentMetrics.find(m => m.type === 'sleep_duration')?.value || 0,
-        sleepQuality: recentMetrics.find(m => m.type === 'sleep_score')?.value || 0,
-        rpe: recentMetrics.find(m => m.type === 'rpe')?.value || 0,
-        stressLevel: recentMetrics.find(m => m.type === 'stress_score')?.value || 0,
-        mood: 'Neutral',
-        soreness: 0,
-        weight: 0
-      };
-
-      const result = await analyzeHealthData(userProfile, [mockDaily]);
+      const result = await analyzeHealthData(userProfile, []);
       setAnalysis(result);
     } catch (error) {
       console.error("Error refreshing analysis:", error);
@@ -91,6 +75,16 @@ export function Dashboard() {
   };
 
   const hasData = metrics.length > 0 || garminActivities.length > 0;
+
+  const lastGarmin = useMemo(() => {
+    const dates = garminActivities.map(a => new Date(a.date).getTime());
+    return dates.length > 0 ? new Date(Math.max(...dates)).toLocaleDateString() : 'Jamais';
+  }, [garminActivities]);
+
+  const lastManual = useMemo(() => {
+    const dates = useStore.getState().hooperLogs.map(l => new Date(l.date).getTime());
+    return dates.length > 0 ? new Date(Math.max(...dates)).toLocaleDateString() : 'Jamais';
+  }, [useStore.getState().hooperLogs]);
 
   if (!hasData) {
     return (
@@ -288,14 +282,14 @@ export function Dashboard() {
                   <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-[#86868B]">Sources Actives</h3>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div className={`w-2 h-2 rounded-full ${lastGarmin === 'Jamais' ? 'bg-gray-300' : 'bg-green-500'}`}></div>
                       <span className="text-sm font-medium">Garmin Connect</span>
-                      <span className="text-xs text-muted-foreground ml-auto">Il y a 2h</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{lastGarmin}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div className={`w-2 h-2 rounded-full ${lastManual === 'Jamais' ? 'bg-gray-300' : 'bg-green-500'}`}></div>
                       <span className="text-sm font-medium">Saisie Manuelle</span>
-                      <span className="text-xs text-muted-foreground ml-auto">Aujourd'hui</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{lastManual}</span>
                     </div>
                   </div>
                 </div>

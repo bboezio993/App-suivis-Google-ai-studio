@@ -34,7 +34,9 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   const activeExerciseCal = state.garminActivities
     .filter((a) => a.date.startsWith(todayStr))
     .reduce((sum, act) => sum + (act.calories || 0), 0);
-  const energyAvailability = ffm > 0 ? (totalConsCal - activeExerciseCal) / ffm : 0;
+  
+  const hasSufficientNutritionData = todayMealLogs.length >= 2 || totalConsCal > 800;
+  const energyAvailability = (ffm > 0 && hasSufficientNutritionData) ? (totalConsCal - activeExerciseCal) / ffm : null;
 
   const dataUsed = ["meal_logs"];
   const dataMissing: string[] = [];
@@ -45,11 +47,15 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   let nutritionScore = 50;
   let confidence = 0;
 
-  if (todayMealLogs.length > 0) {
+  if (hasSufficientNutritionData) {
     confidence = 90;
     const proRatio = Math.min(2, totalPro / (weightKg * 1.6));
     const carbsRatio = Math.min(2, totalCar / (weightKg * 4));
-    nutritionScore = Math.round((proRatio * 50) + (carbsRatio * 30) + (energyAvailability >= 30 ? 20 : 5));
+    let eaScore = 15;
+    if (energyAvailability !== null) {
+      eaScore = energyAvailability >= 30 ? 20 : 5;
+    }
+    nutritionScore = Math.round((proRatio * 50) + (carbsRatio * 30) + eaScore);
     
     positiveDrivers.push({
       metricId: "protein_intake",
@@ -62,7 +68,7 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
     dataMissing.push("meal_logs_today");
     nutritionScore = 45;
     confidence = 30;
-    limits.push("Absence de logs alimentaires journaliers pour modéliser précisément le ravitaillement métabolique.");
+    limits.push("Absence de logs alimentaires suffisants pour modéliser précisément le ravitaillement métabolique ou la disponibilité énergétique.");
   }
 
   nutritionScore = Math.min(100, Math.max(0, nutritionScore));
