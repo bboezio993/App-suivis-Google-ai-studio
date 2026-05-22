@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { internalFoodDatabase, servingUnits, convertPortionToGrams, internalRecipes } from '../../domain/nutrition/foodDatabase';
+import { resolveRecipeToMealItem } from '../../domain/nutrition/recipeEngine';
+import { foodNutrientDatabase } from '../../domain/nutrition/foodNutrientValues';
+import { CoreNutrients } from '../../domain/nutrition/nutrientDefinitions';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Check, Search, ChevronRight, Apple, Flame, Award, AlertTriangle, Clipboard, BookOpen } from 'lucide-react';
@@ -166,54 +169,10 @@ export function NutritionLogger() {
   const handleConfirmImportRecipe = () => {
     if (!importingRecipe) return;
 
-    let ratio = 1;
-    let label = "Recette entière";
-    let servingGrams = importingRecipe.finalWeightGrams || 0;
-    
-    if (importRecipeMode === "portions") {
-      ratio = importRecipePortions / (importingRecipe.numberOfPortions || 1);
-      label = `${importRecipePortions} portion(s)`;
-      if (servingGrams > 0) servingGrams = servingGrams * ratio;
-    } else if (importRecipeMode === "grams") {
-      if (importingRecipe.finalWeightGrams && importingRecipe.finalWeightGrams > 0) {
-        ratio = importRecipeGrams / importingRecipe.finalWeightGrams;
-        label = `${importRecipeGrams}g servis`;
-        servingGrams = importRecipeGrams;
-      } else {
-        ratio = 1;
-        label = "Grammes (poids final inconnu, base 100%)";
-      }
-    }
+    const value = importRecipeMode === "portions" ? importRecipePortions : importRecipeGrams;
+    const recipeItem = resolveRecipeToMealItem(importingRecipe, importRecipeMode, value);
 
-    const resolvedItems = importingRecipe.items.map(it => {
-      const dbFood = internalFoodDatabase.find(f => f.id === it.foodId);
-      const scaledGrams = it.gramsSelected * ratio;
-      const calories = dbFood ? Math.round(dbFood.calories * (scaledGrams / 100)) : 0;
-      const protein = dbFood ? Number((dbFood.protein * (scaledGrams / 100)).toFixed(1)) : 0;
-      const carbs = dbFood ? Number((dbFood.carbs * (scaledGrams / 100)).toFixed(1)) : 0;
-      const fat = dbFood ? Number((dbFood.fat * (scaledGrams / 100)).toFixed(1)) : 0;
-
-      return {
-        foodId: it.foodId,
-        foodName: `${it.foodName} (${label})`,
-        quantity: typeof it.quantity === 'number' ? Number((it.quantity * ratio).toFixed(2)) : it.quantity,
-        unit: it.unit,
-        gramsSelected: scaledGrams,
-        rawCookedState: it.rawCookedState,
-        conversionConfidence: it.conversionConfidence,
-        conversionAssumptions: it.conversionAssumptions ? `${it.conversionAssumptions} (ratio ${ratio.toFixed(2)})` : '',
-        sourceType: "recipe" as const,
-        recipeId: importingRecipe.id,
-        recipeServingCount: importRecipeMode === "portions" ? importRecipePortions : undefined,
-        recipeServingWeightGrams: servingGrams > 0 ? servingGrams : undefined,
-        calories,
-        protein,
-        carbs,
-        fat
-      };
-    });
-
-    setItems([...items, ...resolvedItems]);
+    setItems([...items, recipeItem]);
     setImportingRecipe(null);
   };
 
@@ -289,6 +248,14 @@ export function NutritionLogger() {
         rawCookedState: it.rawCookedState,
         conversionConfidence: it.conversionConfidence,
         conversionAssumptions: it.conversionAssumptions,
+        sourceType: it.sourceType,
+        recipeId: it.recipeId,
+        recipeServingCount: it.recipeServingCount,
+        recipeServingWeightGrams: it.recipeServingWeightGrams,
+        recipeRatio: it.recipeRatio,
+        expandedIngredients: it.expandedIngredients,
+        nutritionVersion: it.nutritionVersion,
+        missingNutrients: it.missingNutrients,
         calories: it.calories,
         protein: it.protein,
         carbs: it.carbs,
@@ -665,7 +632,31 @@ export function NutritionLogger() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-1 mt-2">
+                  {foodNutrientDatabase[selectedFood.id] && (
+                    <div className="pt-3 border-t border-border mt-3 space-y-2">
+                      <h6 className="text-[10px] font-bold text-muted-foreground uppercase">Détails Micronutritionnels (pour 100g)</h6>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {foodNutrientDatabase[selectedFood.id].map(nut => {
+                          const def = Object.values(CoreNutrients).find(n => n.id === nut.nutrientId);
+                          return (
+                            <div key={nut.nutrientId} className="flex justify-between items-center p-2 rounded-lg bg-secondary/30 text-[10px]">
+                              <span className="font-semibold">{def?.name || nut.nutrientId}</span>
+                              {nut.isMissing ? (
+                                <span className="text-orange-500 italic" title={nut.missingReason}>Non disponible</span>
+                              ) : (
+                                <div className="text-right">
+                                  <span className="font-mono font-bold text-foreground">{nut.valuePer100g} {nut.unit}</span>
+                                  {nut.source && <span className="block text-[8px] text-muted-foreground">Source: {nut.source} (Conf: {nut.confidence}%)</span>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2 mt-3 border-t border-border">
                     <Button 
                       onClick={handleAddItemToMeal} 
                       type="button" 

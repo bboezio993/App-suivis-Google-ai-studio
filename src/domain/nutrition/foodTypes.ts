@@ -8,10 +8,11 @@ export interface NutrientDefinition {
 export interface FoodNutrientValue {
   nutrientId: string;
   valuePer100g?: number;
+  unit: string;
   isMissing: boolean;
   confidence: number;
-  sourceOverride?: string;
-  reasonIfMissing?: string;
+  source?: string;
+  missingReason?: "unknown" | "not_applicable" | "trace" | "not_measured";
 }
 
 export interface FoodItem {
@@ -79,12 +80,14 @@ export interface MealItem {
   recipeId?: string;
   recipeServingCount?: number;
   recipeServingWeightGrams?: number;
+  recipeRatio?: number;
+  expandedIngredients?: RecipeIngredient[];
 
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  rawCookedState?: "raw" | "cooked";
+  rawCookedState?: "raw" | "cooked" | "prepared" | "unknown";
 }
 
 export interface MealLog {
@@ -144,12 +147,32 @@ export interface NutritionDaySummary {
   totalCarbs: number;
   totalFat: number;
   totalFiber: number;
-  hydrationMl: number;
-  mealCount: number;
-  completenessScore: number;
-  confidenceScore: number;
+  totalSugars: number;
+  totalSaturatedFat: number;
+  totalHydrationMl: number;
+  
+  sodium: number;
+  potassium: number;
+  calcium: number;
+  magnesium: number;
+  iron: number;
+  zinc: number;
+  vitC: number;
+  vitD: number;
+  vitB12: number;
+
+  presentMeals: ("breakfast" | "lunch" | "dinner" | "snack" | "pre_workout" | "intra_workout" | "post_workout")[];
+  missingMeals: ("breakfast" | "lunch" | "dinner")[];
+  
+  isComplete: boolean;
+  confidence: number;
   limits: string[];
-  missingValues: string[];
+  missingNutrients: string[];
+  
+  approximatedPortions: number;
+  recipesWithoutClearPortions: number;
+  foodsWithoutSource: number;
+  micronutrients: any[];
 }
 
 export interface CookingYieldFactor {

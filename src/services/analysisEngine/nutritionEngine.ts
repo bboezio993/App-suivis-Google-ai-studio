@@ -6,7 +6,7 @@ import { buildNutritionDaySummary } from "./mealLogEngine";
 export function runNutritionEngine(state: AppState): ModularEngineResult {
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const summary = buildNutritionDaySummary(state.mealLogs, todayStr);
+  const summary = buildNutritionDaySummary(state.mealLogs, todayStr, state.metrics);
   const totalConsCal = summary.totalCalories;
   const totalPro = summary.totalProtein;
   const totalCar = summary.totalCarbs;

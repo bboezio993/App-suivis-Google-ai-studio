@@ -174,9 +174,38 @@ assert.ok(weightlessState.mealLogs[0].items[0].conversionAssumptions === "Poulet
 console.log("✅ Custom MealLogs retain conversion assumptions and engine safely handles missing weight");
 
 import { buildNutritionDaySummary } from "./src/services/analysisEngine/mealLogEngine";
+import { resolveRecipeToMealItem } from "./src/domain/nutrition/recipeEngine";
+import { Recipe } from "./src/domain/nutrition/foodTypes";
+
+const fakeRecipe: Recipe = {
+  id: "rcp_1",
+  name: "Porridge",
+  numberOfPortions: 2,
+  finalWeightGrams: 500,
+  items: [
+    { foodId: "f_1", foodName: "Avoine", quantity: 100, unit: "g", gramsSelected: 100, calories: 350, protein: 12, carbs: 60, fat: 5 }
+  ]
+};
+
+const fullMealItem = resolveRecipeToMealItem(fakeRecipe, "portions", 2);
+assert.ok(fullMealItem.recipeRatio === 1, "Ratio for 2 portions out of 2 should be 1");
+assert.ok(fullMealItem.gramsSelected === 500, "Should use finalWeightGrams if entire recipe");
+
+const halfMealItem = resolveRecipeToMealItem(fakeRecipe, "portions", 1);
+assert.ok(halfMealItem.recipeRatio === 0.5, "Ratio for 1 portion out of 2 should be 0.5");
+assert.ok(halfMealItem.gramsSelected === 250, "Should scale gramsSelected by ratio");
+
+const gramMealItem = resolveRecipeToMealItem(fakeRecipe, "grams", 100);
+assert.ok(gramMealItem.recipeRatio === 0.2, "Ratio for 100g out of 500g should be 0.2");
+
+console.log("✅ recipeEngine correctly handles portions, partial portions, and grams");
+
 const summaryTest = buildNutritionDaySummary(weightlessState.mealLogs, new Date().toISOString().split("T")[0]);
 assert.ok(summaryTest.isComplete === true, "Summary must detect complete day");
 assert.ok(summaryTest.presentMeals.includes("breakfast"), "Summary must include breakfast");
+assert.ok(summaryTest.totalHydrationMl === 0, "Hydration should be 0 if no metric");
+assert.ok(summaryTest.limits.some(l => l.includes("Hydratation non renseignée")), "Must warn about hydration missing");
+
 console.log("✅ NutritionDaySummary is correctly built and utilized");
 
 console.log("=== All Tests Passed ===");
