@@ -112,8 +112,7 @@ export function Training() {
           Charge d'Entraînement (ACWR)
         </h2>
         <p className="text-muted-foreground max-w-md mb-8 leading-relaxed">
-          Prévenez les blessures en surveillant votre ratio de charge aiguë
-          (fatigue) sur charge chronique (fitness).
+          Suivez les variations de charge aiguë (fatigue) sur charge chronique (fitness).
         </p>
 
         <div className="bento-card max-w-2xl w-full text-left mb-8 bg-white">
@@ -134,10 +133,12 @@ export function Training() {
               <strong>0.8 - 1.3 :</strong> Zone optimale (Sweet spot)
             </li>
             <li>
-              <strong>&gt; 1.5 :</strong> Zone de vigilance (Risque de blessure
-              doublé)
+              <strong>&gt; 1.5 :</strong> Zone de vigilance (Charge aiguë élevée par rapport à l'historique)
             </li>
           </ul>
+          <p className="text-[10px] text-muted-foreground italic mt-2 border-t border-border pt-1">
+            À interpréter avec le sommeil, les douleurs, la fatigue et le contexte. L'ACWR ne prédit pas seul un événement de blessure.
+          </p>
           <div className="flex items-start gap-3 p-4 bg-[#F2F2F7] rounded-xl">
             <AlertCircle size={16} className="text-[#FF3B30] shrink-0 mt-0.5" />
             <p className="text-xs text-[#1D1D1F]">
@@ -169,10 +170,10 @@ export function Training() {
       acwrStatus = "Zone Optimale";
       acwrColor = "text-green-200";
     } else if (acwr <= 1.5) {
-      acwrStatus = "Surcharge";
+      acwrStatus = "Surcharge contrôlée";
       acwrColor = "text-orange-200";
     } else {
-      acwrStatus = "Zone de Danger";
+      acwrStatus = "Zone de vigilance";
       acwrColor = "text-red-200";
     }
   }
@@ -293,7 +294,7 @@ export function Training() {
                   contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 />
                 {/* Zones de référence ACWR */}
-                <rect y={0} width="100%" height="100%" fill="#FF3B30" opacity={0.05} /> {/* Danger > 1.5 */}
+                <rect y={0} width="100%" height="100%" fill="#FF3B30" opacity={0.05} /> {/* Vigilance > 1.5 */}
                 <rect y="25%" width="100%" height="10%" fill="#FF9500" opacity={0.05} /> {/* Surcharge 1.3 - 1.5 */}
                 <rect y="35%" width="100%" height="25%" fill="#34C759" opacity={0.05} /> {/* Optimal 0.8 - 1.3 */}
                 <rect y="60%" width="100%" height="40%" fill="#0071E3" opacity={0.05} /> {/* Sous-entraînement < 0.8 */}
@@ -312,8 +313,8 @@ export function Training() {
           <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-100 rounded-sm"></div> Sous-entraînement (&lt;0.8)</div>
             <div className="flex items-center gap-1"><div className="w-3 h-3 bg-green-100 rounded-sm"></div> Optimal (0.8-1.3)</div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-orange-100 rounded-sm"></div> Surcharge (1.3-1.5)</div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-100 rounded-sm"></div> Danger (&gt;1.5)</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-orange-100 rounded-sm"></div> Surcharge contrôlée (1.3-1.5)</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-100 rounded-sm"></div> Vigilance (&gt;1.5)</div>
           </div>
         </div>
 

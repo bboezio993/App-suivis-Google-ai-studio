@@ -1,24 +1,17 @@
 import { AppState } from "../../store/useStore";
 import { ModularEngineResult } from "./types";
 import { Driver } from "./engine";
+import { buildNutritionDaySummary } from "./mealLogEngine";
 
 export function runNutritionEngine(state: AppState): ModularEngineResult {
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const todayMealLogs = state.mealLogs.filter((ml) => ml.date === todayStr);
-  let totalConsCal = 0;
-  let totalPro = 0;
-  let totalCar = 0;
-  let totalFat = 0;
-
-  todayMealLogs.forEach((meal) => {
-    meal.items.forEach((it) => {
-      totalConsCal += it.calories || 0;
-      totalPro += it.protein || 0;
-      totalCar += it.carbs || 0;
-      totalFat += it.fat || 0;
-    });
-  });
+  const summary = buildNutritionDaySummary(state.mealLogs, todayStr);
+  const totalConsCal = summary.totalCalories;
+  const totalPro = summary.totalProtein;
+  const totalCar = summary.totalCarbs;
+  const totalFat = summary.totalFat;
+  const limits: string[] = [...summary.limits];
 
   const weightKg = state.userProfile?.general?.weight;
   const heightCm = state.userProfile?.general?.height;
@@ -49,32 +42,23 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
     .filter((a) => a.date.startsWith(todayStr))
     .reduce((sum, act) => sum + (act.calories || 0), 0);
   
-  const hasBreakfast = todayMealLogs.some(m => m.mealType === 'breakfast');
-  const hasLunch = todayMealLogs.some(m => m.mealType === 'lunch');
-  const hasDinner = todayMealLogs.some(m => m.mealType === 'dinner');
-  const mealCount = todayMealLogs.length;
-
-  const isDayComplete = hasBreakfast && hasLunch && hasDinner && totalConsCal > 1200;
-  const hasSufficientNutritionData = mealCount >= 3 || isDayComplete;
+  const hasSufficientNutritionData = summary.isComplete || summary.presentMeals.length >= 3;
   
   const energyAvailability = (ffm !== null && hasSufficientNutritionData) ? (totalConsCal - activeExerciseCal) / ffm : null;
 
   const dataUsed = ["meal_logs"];
   const dataMissing: string[] = [];
-  const limits: string[] = [];
   const positiveDrivers: Driver[] = [];
   const negativeDrivers: Driver[] = [];
 
   let nutritionScore = 50;
-  let confidence = 0;
+  let confidence = summary.confidence;
 
   if (bmr === null) {
       limits.push("Dépense de base (BMR) non calculable précisément (profil biométrique incomplet).");
   }
 
   if (hasSufficientNutritionData) {
-    confidence = isDayComplete ? 70 : 40; 
-    
     if (bmr === null) confidence -= 20;
     if (ffm === null) confidence -= 10;
     confidence = Math.max(10, confidence);
@@ -109,8 +93,7 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   } else {
     dataMissing.push("meal_logs_today");
     nutritionScore = 50;
-    confidence = mealCount > 0 ? 30 : 0;
-    limits.push("Saisie alimentaire incomplète. Impossible de modéliser avec précision le bilan énergétique.");
+    // confidence handled by summary 
   }
 
   nutritionScore = Math.min(100, Math.max(0, nutritionScore));

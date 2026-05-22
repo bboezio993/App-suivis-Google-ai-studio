@@ -158,23 +158,54 @@ export function NutritionLogger() {
     setTimeout(() => setRecipeSaveSuccess(false), 3000);
   };
 
-  const handleImportRecipe = (recipe: Recipe) => {
-    const resolvedItems = recipe.items.map(it => {
+  const [importingRecipe, setImportingRecipe] = useState<Recipe | null>(null);
+  const [importRecipePortions, setImportRecipePortions] = useState<number>(1);
+  const [importRecipeMode, setImportRecipeMode] = useState<"portions" | "grams" | "entire">("portions");
+  const [importRecipeGrams, setImportRecipeGrams] = useState<number>(0);
+
+  const handleConfirmImportRecipe = () => {
+    if (!importingRecipe) return;
+
+    let ratio = 1;
+    let label = "Recette entière";
+    let servingGrams = importingRecipe.finalWeightGrams || 0;
+    
+    if (importRecipeMode === "portions") {
+      ratio = importRecipePortions / (importingRecipe.numberOfPortions || 1);
+      label = `${importRecipePortions} portion(s)`;
+      if (servingGrams > 0) servingGrams = servingGrams * ratio;
+    } else if (importRecipeMode === "grams") {
+      if (importingRecipe.finalWeightGrams && importingRecipe.finalWeightGrams > 0) {
+        ratio = importRecipeGrams / importingRecipe.finalWeightGrams;
+        label = `${importRecipeGrams}g servis`;
+        servingGrams = importRecipeGrams;
+      } else {
+        ratio = 1;
+        label = "Grammes (poids final inconnu, base 100%)";
+      }
+    }
+
+    const resolvedItems = importingRecipe.items.map(it => {
       const dbFood = internalFoodDatabase.find(f => f.id === it.foodId);
-      const calories = dbFood ? Math.round(dbFood.calories * (it.gramsSelected / 100)) : 0;
-      const protein = dbFood ? Number((dbFood.protein * (it.gramsSelected / 100)).toFixed(1)) : 0;
-      const carbs = dbFood ? Number((dbFood.carbs * (it.gramsSelected / 100)).toFixed(1)) : 0;
-      const fat = dbFood ? Number((dbFood.fat * (it.gramsSelected / 100)).toFixed(1)) : 0;
+      const scaledGrams = it.gramsSelected * ratio;
+      const calories = dbFood ? Math.round(dbFood.calories * (scaledGrams / 100)) : 0;
+      const protein = dbFood ? Number((dbFood.protein * (scaledGrams / 100)).toFixed(1)) : 0;
+      const carbs = dbFood ? Number((dbFood.carbs * (scaledGrams / 100)).toFixed(1)) : 0;
+      const fat = dbFood ? Number((dbFood.fat * (scaledGrams / 100)).toFixed(1)) : 0;
 
       return {
         foodId: it.foodId,
-        foodName: it.foodName,
-        quantity: it.quantity,
+        foodName: `${it.foodName} (${label})`,
+        quantity: typeof it.quantity === 'number' ? Number((it.quantity * ratio).toFixed(2)) : it.quantity,
         unit: it.unit,
-        gramsSelected: it.gramsSelected,
+        gramsSelected: scaledGrams,
         rawCookedState: it.rawCookedState,
         conversionConfidence: it.conversionConfidence,
-        conversionAssumptions: it.conversionAssumptions,
+        conversionAssumptions: it.conversionAssumptions ? `${it.conversionAssumptions} (ratio ${ratio.toFixed(2)})` : '',
+        sourceType: "recipe" as const,
+        recipeId: importingRecipe.id,
+        recipeServingCount: importRecipeMode === "portions" ? importRecipePortions : undefined,
+        recipeServingWeightGrams: servingGrams > 0 ? servingGrams : undefined,
         calories,
         protein,
         carbs,
@@ -183,6 +214,7 @@ export function NutritionLogger() {
     });
 
     setItems([...items, ...resolvedItems]);
+    setImportingRecipe(null);
   };
 
   // Search filter
@@ -473,7 +505,12 @@ export function NutritionLogger() {
                         </div>
                         <Button
                           type="button"
-                          onClick={() => handleImportRecipe(rcp)}
+                          onClick={() => {
+                            setImportingRecipe(rcp);
+                            setImportRecipeMode("portions");
+                            setImportRecipePortions(1);
+                            setImportRecipeGrams(rcp.finalWeightGrams || 0);
+                          }}
                           disabled={uniqueAllergens.length > 0}
                           className={`text-[10px] h-7 px-2.5 rounded-lg py-1 font-semibold ${
                             uniqueAllergens.length > 0
@@ -488,6 +525,56 @@ export function NutritionLogger() {
                   );
                 })}
               </div>
+
+              {importingRecipe && (
+                <div className="p-4 mt-4 border rounded-2xl bg-indigo-50/50 border-indigo-500/20 space-y-4">
+                  <div className="flex justify-between items-center border-b border-indigo-500/10 pb-2">
+                    <h5 className="font-bold text-xs text-indigo-700 uppercase tracking-wide">Importer : {importingRecipe.name}</h5>
+                    <button onClick={() => setImportingRecipe(null)} className="text-muted-foreground hover:text-foreground">
+                      X
+                    </button>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-1.5 text-xs text-indigo-900">
+                      <input type="radio" value="portions" checked={importRecipeMode === 'portions'} onChange={() => setImportRecipeMode('portions')} className="accent-indigo-600" />
+                      Par Portion
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs text-indigo-900">
+                      <input type="radio" value="grams" checked={importRecipeMode === 'grams'} onChange={() => setImportRecipeMode('grams')} className="accent-indigo-600" />
+                      Par Grammes
+                    </label>
+                  </div>
+
+                  {importRecipeMode === 'portions' ? (
+                    <div>
+                      <label className="text-[10px] font-bold block text-indigo-900/70 mb-1">Nombre de portions (Recette originale : {importingRecipe.numberOfPortions || 1})</label>
+                      <input
+                        type="number" step="0.1"
+                        value={importRecipePortions}
+                        onChange={(e) => setImportRecipePortions(Number(e.target.value))}
+                        className="w-full text-xs rounded-lg border border-indigo-200 text-foreground p-2 font-mono"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-[10px] font-bold block text-indigo-900/70 mb-1">
+                        Grammes consommés (Recette totale : {importingRecipe.finalWeightGrams ? importingRecipe.finalWeightGrams + 'g' : 'Inconnu'})
+                      </label>
+                      <input
+                        type="number"
+                        value={importRecipeGrams}
+                        onChange={(e) => setImportRecipeGrams(Number(e.target.value))}
+                        className="w-full text-xs rounded-lg border border-indigo-200 text-foreground p-2 font-mono"
+                      />
+                    </div>
+                  )}
+
+                  <Button onClick={handleConfirmImportRecipe} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 mt-2">
+                    Confirmer l'Import
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

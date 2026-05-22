@@ -70,6 +70,16 @@ export interface MealItem {
   gramsSelected: number;
   conversionConfidence?: number;
   conversionAssumptions?: string;
+  
+  sourceFoodId?: string;
+  nutritionVersion?: string;
+  missingNutrients?: string[];
+
+  sourceType?: "food" | "recipe";
+  recipeId?: string;
+  recipeServingCount?: number;
+  recipeServingWeightGrams?: number;
+
   calories: number;
   protein: number;
   carbs: number;

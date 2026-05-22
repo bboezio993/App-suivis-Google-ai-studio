@@ -252,7 +252,7 @@ export function Connections() {
                 icon={<Activity className="text-primary" />}
                 title="Readiness d'Aura"
                 value={engineScores ? `${engineScores.performanceReadiness.score}/100` : "75/100"}
-                desc="Indique la réceptivité du système cardiovasculaire et mécanique pour la haute intensité."
+                desc="Indique la réceptivité du système cardiovasculaire et mécanique. Peut orienter la décision d'intensité."
                 status={engineScores?.performanceReadiness.status || "normal"}
               />
 
@@ -278,7 +278,7 @@ export function Connections() {
               <div className="space-y-1">
                 <span className="text-xs font-bold text-yellow-500 uppercase tracking-wide">Surveillance des signaux faibles</span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Le Risk Boundary Engine étudie de façon croisée les signaux subjectifs de douleurs actives, de courbatures et de HRV. Si votre check-in matinal signale une fatigue intense, le score de Readiness s'effondrera automatiquement, même si votre montre indique un sommeil récupéré. Le corps de l'athlète a toujours le dernier mot.
+                  Le Risk Boundary Engine étudie de façon croisée les signaux subjectifs de douleurs actives, de courbatures et de HRV. Si votre check-in matinal signale une fatigue intense, cela peut réduire la disponibilité estimée, même si votre montre indique un sommeil récupéré. Les ressentis subjectifs sont intégrés comme facteurs de prudence.
                 </p>
               </div>
             </div>

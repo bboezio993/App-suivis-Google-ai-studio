@@ -173,5 +173,11 @@ assert.ok(weightlessState.mealLogs[0].items[0].conversionConfidence === 80, "Mea
 assert.ok(weightlessState.mealLogs[0].items[0].conversionAssumptions === "Poulet cru", "MealLog must preserve conversionAssumptions");
 console.log("✅ Custom MealLogs retain conversion assumptions and engine safely handles missing weight");
 
+import { buildNutritionDaySummary } from "./src/services/analysisEngine/mealLogEngine";
+const summaryTest = buildNutritionDaySummary(weightlessState.mealLogs, new Date().toISOString().split("T")[0]);
+assert.ok(summaryTest.isComplete === true, "Summary must detect complete day");
+assert.ok(summaryTest.presentMeals.includes("breakfast"), "Summary must include breakfast");
+console.log("✅ NutritionDaySummary is correctly built and utilized");
+
 console.log("=== All Tests Passed ===");
 
