@@ -49,6 +49,7 @@ export interface AppState {
   addSessionRPE: (log: SessionRPE) => void;
   addWeeklyScreeningLog: (log: WeeklyScreeningLog) => void;
   addMealLog: (log: MealLog) => void;
+  deleteMealLog: (id: string) => void;
   addPainLog: (log: PainLog) => void;
   addContextLog: (log: LifeContextLog) => void;
   addAllergenBypassLog: (log: AllergenBypassLog) => void;
@@ -73,7 +74,9 @@ const initialProfile: UserProfile = {
     hydration: { value: 2500, isUserDefined: false },
     sodium: { value: 2300, isUserDefined: false },
     objective: "performance"
-  }
+  },
+  favoriteFoodIds: [],
+  favoriteRecipeIds: []
 };
 
 const initialConnections: Record<DataSource, ConnectionState> = {
@@ -253,6 +256,12 @@ export const useStore = create<AppState>()(
           return { mealLogs: [...filtered, log] };
         });
         // Integrate into global metrics so that nutrition calculations get processed in real-time
+        get().computeEngineScores();
+      },
+      deleteMealLog: (id) => {
+        set((state) => ({
+          mealLogs: state.mealLogs.filter(l => l.id !== id)
+        }));
         get().computeEngineScores();
       },
       addPainLog: (log) => {

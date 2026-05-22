@@ -199,7 +199,7 @@ export interface MicronutrientCoverageValue {
   value: number;
   unit: string;
   ratio?: number;
-  status: "met" | "deficient" | "unmeasured";
+  status: "met" | "low" | "unmeasured";
 }
 
 export interface NutritionAnalysisResult {
@@ -245,6 +245,8 @@ export interface NutritionGoal {
   hydration: { value: number; isUserDefined: boolean };
   sodium: { value: number; isUserDefined: boolean };
   objective: "maintenance" | "performance" | "recovery" | "recomposition" | "other";
+  updatedAt?: string;
+  source?: string;
 }
 
 

@@ -50,6 +50,8 @@ export interface UserProfile {
     dataSharingConsent: boolean;
   };
   nutritionGoal?: NutritionGoal;
+  favoriteFoodIds?: string[];
+  favoriteRecipeIds?: string[];
 }
 
 export interface MenstrualLog {
@@ -194,7 +196,7 @@ export interface EngineScores {
   nutritionAdequacy: {
     score: number;
     confidence: number;
-    status: "optimal" | "adequate" | "deficit" | "watch";
+    status: "optimal" | "adequate" | "low" | "incomplete" | "watch";
   };
   psychologicalLoad: {
     score: number;

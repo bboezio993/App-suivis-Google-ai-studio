@@ -31,7 +31,7 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
       "Peut être masqué par l'usage de bêta-bloquants.",
       "Fortement corrélé à la déshydratation temporaire ou d'un entraînement en soirée."
     ],
-    userFacingExplanation: "Un rythme cardiaque au repos plus élevé que d'habitude suggère que votre organisme travaille plus dur au calme pour maintenir son équilibre interne. Cela peut provenir d'un stress résiduel ou d'une récupération incomplète, sans qu'un diagnostic ne puisse être conclu seul."
+    userFacingExplanation: "Un rythme cardiaque au repos plus élevé de quelques battements peut être associé à des fluctuations ordinaires de récupération. À interpréter avec le sommeil, le contexte et le ressenti global, car les données seules ne permettent pas de conclure."
   },
   sleep_debt: {
     id: "sleep_debt",
@@ -43,7 +43,7 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
       "Le besoin absolu de sommeil est très individuel.",
       "La qualité globale perçue (efficacité) est parfois plus prédictive que la durée exacte chez certains athlètes."
     ],
-    userFacingExplanation: "Vos nuits récentes n'ont pas permis de reconstituer vos réserves optimales. La dette de sommeil réduit la réactivité perçue et favorise une plus grande susceptibilité aux inconforts physiques."
+    userFacingExplanation: "Vos nuits récentes peuvent être compatibles avec une récupération moindre et des ressentis de fatigue accrus. Ce signal est à interpréter avec le sommeil global, le ressenti subjectif et le contexte."
   },
   acwr_caution: {
     id: "acwr_caution",
@@ -65,9 +65,9 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
     applicability: "Analysé lors de la saisie post-séance par rapport aux zones de FC Garmin.",
     limitations: [
       "Demande une sincérité totale et un calibrage de l'échelle par l'utilisateur.",
-      "N'est pas directement quantifiable par formule brute."
+      "N'est pas directement quantifiable par brute calcul."
     ],
-    userFacingExplanation: "Vous avez trouvé la séance d'aujourd'hui plus éprouvante que ce que la montre indique. Ce décalage suggère que vos ressources initiales étaient limitées, invitant simplement à l'écoute de soi."
+    userFacingExplanation: "Vous avez trouvé la séance d'aujourd'hui plus exigeante que la métrique externe brute calculée. Ce décalage peut être compatible avec une fatigue passagère ou une récupération moindre, invitant à l'écoute personnelle."
   },
   low_energy_availability: {
     id: "low_energy_availability",

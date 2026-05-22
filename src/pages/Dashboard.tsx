@@ -265,11 +265,43 @@ export function Dashboard() {
                         </div>
 
                         {rec.scientificClaim && (
-                          <div className="mt-3 pt-3 border-t border-border/60 flex items-start gap-2">
-                            <AlertCircle size={13} className="text-purple-400 shrink-0 mt-0.5" />
-                            <p className="text-[11px] text-muted-foreground italic leading-normal">
-                              <strong>Base scientifique :</strong> {rec.scientificClaim}
-                            </p>
+                          <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle size={13} className="text-purple-400 shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-muted-foreground italic leading-normal">
+                                <strong>Base scientifique :</strong> {rec.scientificClaim}
+                              </p>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                              <div className="p-1 px-2 rounded-md bg-secondary/15 text-[10px] space-y-0.5">
+                                <span className="text-[8px] text-muted-foreground uppercase font-semibold block">Preuves</span>
+                                <span className={`font-bold uppercase text-[9px] ${
+                                  rec.evidenceLevel === 'robust' ? 'text-emerald-400' :
+                                  rec.evidenceLevel === 'probable' ? 'text-indigo-400' :
+                                  'text-amber-500'
+                                }`}>
+                                  {rec.evidenceLevel === 'robust' ? 'Robuste' : rec.evidenceLevel === 'probable' ? 'Probable' : 'Exploratoire'}
+                                </span>
+                              </div>
+                              <div className="p-1 px-2 rounded-md bg-secondary/15 text-[10px] space-y-0.5 font-mono">
+                                <span className="text-[8px] text-muted-foreground uppercase font-semibold block font-sans">Confiance</span>
+                                <span className="text-foreground font-bold">{rec.confidence}%</span>
+                              </div>
+                              <div className="p-1 px-2 rounded-md bg-secondary/15 text-[10px] space-y-0.5 col-span-2">
+                                <span className="text-[8px] text-muted-foreground uppercase font-semibold block">Données mobilisées</span>
+                                <span className="text-foreground font-semibold truncate block">
+                                  {rec.basedOn?.map(b => b.replace('_', ' ')).join(', ') || 'Historique'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {rec.limitations && rec.limitations.length > 0 && (
+                              <div className="text-[9.5px] text-muted-foreground bg-secondary/10 p-2 rounded-lg leading-tight flex gap-1 items-start">
+                                <span className="font-bold text-amber-500 shrink-0 uppercase text-[8px] mt-0.5">Limites :</span>
+                                <span>{rec.limitations.join('. ')}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

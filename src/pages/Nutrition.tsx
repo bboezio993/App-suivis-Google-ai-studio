@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useStore } from "../store/useStore";
 import { NutritionLogger } from "../features/nutrition/NutritionLogger";
 import { buildNutritionDaySummary } from "../services/analysisEngine/mealLogEngine";
 import { analyzeNutritionDay } from "../services/analysisEngine/nutritionEngine";
+import { foodNutrientDatabase } from "../domain/nutrition/foodNutrientValues";
 import { 
   Droplets, 
   Apple, 
@@ -20,7 +21,8 @@ import {
   Lightbulb,
   Heart,
   Sliders,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,23 +32,41 @@ export function Nutrition() {
   const addMetric = useStore(state => state.addMetric);
 
   const todayStr = new Date().toISOString().split("T")[0];
+  const [isRestDay, setIsRestDay] = useState(false);
+  
+  const mealTypeOrder = [
+    "breakfast",
+    "pre_workout",
+    "intra_workout",
+    "post_workout",
+    "lunch",
+    "snack",
+    "dinner"
+  ];
   
   // High fidelity structures from our central engines
-  const summary = buildNutritionDaySummary(storeState.mealLogs, todayStr, storeState.metrics);
+  const summary = buildNutritionDaySummary(storeState.mealLogs, todayStr, storeState.metrics, storeState);
   const analysis = analyzeNutritionDay(storeState, todayStr);
 
   const todayMeals = storeState.mealLogs.filter(log => log.date === todayStr);
   const weightKg = storeState.userProfile?.general?.weight;
+  const isProfileComplete = !!(weightKg && storeState.userProfile?.general?.height && storeState.userProfile?.general?.age && storeState.userProfile?.general?.gender);
 
   // Macro targets (derived dynamically from analysis targets)
-  const targetCalories = analysis.targets?.calories ?? 2400;
-  const targetProtein = analysis.targets?.protein ?? (weightKg ? Math.round(weightKg * 1.8) : 110);
-  const targetCarbs = analysis.targets?.carbs ?? (weightKg ? Math.round(weightKg * 4.0) : 260);
-  const targetFat = analysis.targets?.fat ?? 75;
-  const targetWaterHtml = analysis.targets?.hydration ?? 2500;
-  const targetFiber = analysis.targets?.fiber ?? 30;
-  const targetSodium = analysis.targets?.sodium ?? 2300;
+  let targetCalories = analysis.targets?.calories ?? 2400;
+  let targetProtein = analysis.targets?.protein ?? (weightKg ? Math.round(weightKg * 1.8) : 110);
+  let targetCarbs = analysis.targets?.carbs ?? (weightKg ? Math.round(weightKg * 4.0) : 260);
+  let targetFat = analysis.targets?.fat ?? 75;
+  let targetWaterHtml = analysis.targets?.hydration ?? 2500;
+  let targetFiber = analysis.targets?.fiber ?? 30;
+  let targetSodium = analysis.targets?.sodium ?? 2300;
   const currentObjective = analysis.targets?.objective ?? "performance";
+
+  if (isRestDay) {
+    targetCalories = Math.round(targetCalories * 0.82);
+    targetCarbs = weightKg ? Math.round(weightKg * 2.8) : 180;
+    targetFat = Math.round(targetFat * 0.9);
+  }
 
   // Goal customization state and functions
   const userGoal = storeState.userProfile?.nutritionGoal || {
@@ -57,13 +77,17 @@ export function Nutrition() {
     fiber: { value: 30, isUserDefined: false },
     hydration: { value: 2500, isUserDefined: false },
     sodium: { value: 2300, isUserDefined: false },
-    objective: "performance"
+    objective: "performance",
+    updatedAt: undefined,
+    source: undefined
   };
 
   const handleUpdateGoalField = (field: string, val: any) => {
     const updatedGoal = {
       ...userGoal,
-      [field]: field === "objective" ? val : { value: Number(val), isUserDefined: true }
+      [field]: field === "objective" ? val : { value: Number(val), isUserDefined: true },
+      updatedAt: new Date().toISOString(),
+      source: "Manuel (Athlète)"
     };
     storeState.updateUserProfile({
       nutritionGoal: updatedGoal
@@ -80,7 +104,9 @@ export function Nutrition() {
       fiber: { value: 30, isUserDefined: false },
       hydration: { value: 2500, isUserDefined: false },
       sodium: { value: 2300, isUserDefined: false },
-      objective: "performance" as const
+      objective: "performance" as const,
+      updatedAt: new Date().toISOString(),
+      source: "Défaut (Calculateur)"
     };
     storeState.updateUserProfile({
       nutritionGoal: defaultGoal
@@ -145,14 +171,14 @@ export function Nutrition() {
               </span>
             ) : (
               <span className="text-xs font-semibold flex items-center gap-1 text-muted-foreground mt-2">
-                <AlertCircle size={14} className="text-orange-400 shrink-0" /> Profil incomplet
+                <AlertCircle size={14} className="text-orange-400 shrink-0" /> Profil ou Garmin incomplet
               </span>
             )}
           </div>
           <div className="space-y-1 mt-2 text-[11px] font-medium text-muted-foreground">
             <div className="flex justify-between">
               <span>Consommé :</span>
-              <span className="text-emerald-500 font-bold">+{summary.totalCalories} / {targetCalories}</span>
+              <span className="text-emerald-500 font-bold">+{summary.totalCalories} / {(isProfileComplete || userGoal.calories.isUserDefined) ? `${targetCalories} kcal` : "à définir"}</span>
             </div>
             {analysis.estimatedExpenditureKcal !== null ? (
               <div className="flex justify-between">
@@ -163,9 +189,13 @@ export function Nutrition() {
               <div className="flex justify-between">
                 <span>Active Garmin :</span>
                 <span className="text-red-400 font-bold">
-                  -{storeState.garminActivities
-                    .filter(a => a.date && a.date.startsWith(todayStr))
-                    .reduce((acc, a) => acc + (a.calories || 0), 0)} kcal
+                  {storeState.garminActivities.length > 0 ? (
+                    `-${storeState.garminActivities
+                      .filter(a => a.date && a.date.startsWith(todayStr))
+                      .reduce((acc, a) => acc + (a.calories || 0), 0)} kcal`
+                  ) : (
+                    "pas d'estimation (Garmin absent)"
+                  )}
                 </span>
               </div>
             )}
@@ -182,18 +212,18 @@ export function Nutrition() {
               )}
             </div>
             <span className="text-2xl font-black font-mono block mt-1 text-indigo-400">
-              {summary.totalProtein}g <span className="text-xs font-normal text-muted-foreground">/ {targetProtein}g</span>
+              {summary.totalProtein}g <span className="text-xs font-normal text-muted-foreground">/ {(isProfileComplete || userGoal.proteinGPerKg.isUserDefined) ? `${targetProtein}g` : "à définir"}</span>
             </span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
               <span>Ratio : {analysis.proteinGPerKg !== null ? `${analysis.proteinGPerKg} g/kg` : "—"}</span>
-              <span>{Math.round(Math.min(100, (summary.totalProtein / targetProtein) * 100))}%</span>
+              <span>{(isProfileComplete || userGoal.proteinGPerKg.isUserDefined) ? `${Math.round(Math.min(100, (summary.totalProtein / targetProtein) * 100))}%` : "—"}</span>
             </div>
             <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-indigo-500 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (summary.totalProtein / targetProtein) * 100)}%` }} 
+                style={{ width: `${(isProfileComplete || userGoal.proteinGPerKg.isUserDefined) ? Math.min(100, (summary.totalProtein / targetProtein) * 100) : 0}%` }} 
               />
             </div>
           </div>
@@ -209,18 +239,18 @@ export function Nutrition() {
               )}
             </div>
             <span className="text-2xl font-black font-mono block mt-1 text-amber-500">
-              {summary.totalCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs}g</span>
+              {summary.totalCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {(isProfileComplete || userGoal.carbsGPerKg.isUserDefined) ? `${targetCarbs}g` : "à définir"}</span>
             </span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
               <span>Ratio : {analysis.carbsGPerKg !== null ? `${analysis.carbsGPerKg} g/kg` : "—"}</span>
-              <span>{Math.round(Math.min(100, (summary.totalCarbs / targetCarbs) * 100))}%</span>
+              <span>{(isProfileComplete || userGoal.carbsGPerKg.isUserDefined) ? `${Math.round(Math.min(100, (summary.totalCarbs / targetCarbs) * 100))}%` : "—"}</span>
             </div>
             <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-amber-500 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (summary.totalCarbs / targetCarbs) * 100)}%` }} 
+                style={{ width: `${(isProfileComplete || userGoal.carbsGPerKg.isUserDefined) ? Math.min(100, (summary.totalCarbs / targetCarbs) * 100) : 0}%` }} 
               />
             </div>
           </div>
@@ -244,13 +274,13 @@ export function Nutrition() {
                 <div className="flex justify-between text-[10px] font-medium text-muted-foreground leading-tight">
                   <span>Masse Maigre</span>
                   <span className={analysis.energyAvailability >= 45 ? "text-emerald-400" : analysis.energyAvailability >= 30 ? "text-amber-400" : "text-rose-400"}>
-                    {analysis.energyAvailability >= 45 ? "Optimal" : analysis.energyAvailability >= 30 ? "Adéquat" : "Vigilance LEA"}
+                    {analysis.energyAvailability >= 45 ? "Optimal" : analysis.energyAvailability >= 30 ? "Adéquat" : "disponibilité énergétique basse possible"}
                   </span>
                 </div>
                 <p className="text-[9px] text-muted-foreground leading-tight">
                   {analysis.energyAvailability < 30 
-                    ? "Peut suggérer des apports limités pour soutenir l'effort et la santé." 
-                    : "Soutien physiologique adéquat des fonctions systémiques."}
+                    ? "à interpréter avec les données disponibles" 
+                    : "Soutien adéquat des fonctions cellulaires de base."}
                 </p>
               </>
             ) : (
@@ -269,7 +299,7 @@ export function Nutrition() {
             <div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Hydratation</span>
               <span className="text-2xl font-black font-mono block mt-1 text-sky-400">
-                {(summary.totalHydrationMl / 1000).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">/ {(targetWaterHtml / 1000).toFixed(1)} L</span>
+                {(summary.totalHydrationMl / 1000).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">/ {(isProfileComplete || userGoal.hydration.isUserDefined) ? `${(targetWaterHtml / 1000).toFixed(1)} L` : "à définir"}</span>
               </span>
             </div>
             <Button 
@@ -284,12 +314,12 @@ export function Nutrition() {
           <div className="space-y-1">
             <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
               <span>Saisie hydrique :</span>
-              <span>{Math.min(100, Math.round((summary.totalHydrationMl / targetWaterHtml) * 100))}%</span>
+              <span>{(isProfileComplete || userGoal.hydration.isUserDefined) ? `${Math.min(100, Math.round((summary.totalHydrationMl / targetWaterHtml) * 100))}%` : "—"}</span>
             </div>
             <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-sky-400 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (summary.totalHydrationMl / targetWaterHtml) * 100)}%` }} 
+                style={{ width: `${(isProfileComplete || userGoal.hydration.isUserDefined) ? Math.min(100, Math.round((summary.totalHydrationMl / targetWaterHtml) * 100)) : 0}%` }} 
               />
             </div>
           </div>
@@ -303,6 +333,166 @@ export function Nutrition() {
         <div className="lg:col-span-8 space-y-6">
           <div className="bento-card p-6">
             <NutritionLogger />
+          </div>
+
+          {/* Timeline Repas (P1-5) */}
+          <div className="bento-card p-6 border border-border space-y-6">
+            <div className="flex justify-between items-center pb-3 border-b border-border/60">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Clock size={18} className="text-emerald-500" />
+                Timeline de Ravitaillement du Jour
+              </h3>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase tracking-wide font-mono">
+                Aura Chrono Flow
+              </Badge>
+            </div>
+
+            {todayMeals.length === 0 ? (
+              <div className="py-8 text-center text-xs text-muted-foreground bg-secondary/10 rounded-2xl border border-dashed border-border/50">
+                Aucun repas enregistré pour aujourd’hui. Utilisez le formulaire ci-dessus pour composer votre premier repas.
+              </div>
+            ) : (
+              <div className="relative border-l-2 border-primary/20 pl-6 ml-3 space-y-6 pt-2">
+                {mealTypeOrder.map((mType) => {
+                  const mealsOfThisType = todayMeals.filter(meal => meal.mealType === mType);
+                  if (mealsOfThisType.length === 0) return null;
+
+                  return mealsOfThisType.map((meal) => {
+                    const totalCal = meal.items.reduce((s, i) => s + (i.calories || 0), 0);
+                    const totalPro = meal.items.reduce((s, i) => s + (i.protein || 0), 0);
+                    const totalCarb = meal.items.reduce((s, i) => s + (i.carbs || 0), 0);
+                    const totalFat = meal.items.reduce((s, i) => s + (i.fat || 0), 0);
+
+                    // Check for quality warnings in this meal
+                    const warnings: string[] = [];
+                    meal.items.forEach(it => {
+                      if (it.unit !== 'g') {
+                        warnings.push(`Portion de ${it.foodName} évaluée avec unité (${it.unit}) : précision modérée.`);
+                      }
+                      const hasNutrients = foodNutrientDatabase[it.foodId] && foodNutrientDatabase[it.foodId].length > 0;
+                      if (!hasNutrients) {
+                        warnings.push(`Micronutriments non documentés dans la base CIQUAL/USDA pour: ${it.foodName}.`);
+                      }
+                    });
+
+                    const mealNames: Record<string, string> = {
+                      breakfast: "Petit-déjeuner",
+                      pre_workout: "Collation Pré-effort 🚀",
+                      intra_workout: "Ravitaillement d'effort 🔋",
+                      post_workout: "Récupération Post-effort 🔄",
+                      lunch: "Déjeuner",
+                      snack: "Collation / Snack",
+                      dinner: "Dîner"
+                    };
+
+                    const typicalHours: Record<string, string> = {
+                      breakfast: "07:30",
+                      pre_workout: "09:30",
+                      intra_workout: "10:45",
+                      post_workout: "12:15",
+                      lunch: "12:45",
+                      snack: "16:00",
+                      dinner: "19:45"
+                    };
+
+                    const hungerLabels: Record<number, string> = { 1: "Satiété", 3: "Moyenne", 5: "Intense" };
+                    const satietyLabels: Record<number, string> = { 1: "Affamé", 3: "Idéale", 5: "Surchargée" };
+                    const digestionLabels: Record<number, string> = { 1: "Lourde", 3: "Standard", 5: "Légère" };
+
+                    return (
+                      <div key={meal.id} className="relative group">
+                        {/* Timeline Bullet Anchor */}
+                        <div className="absolute -left-[31px] top-1 w-4.5 h-4.5 rounded-full border-2 border-emerald-500 bg-background flex items-center justify-center transition-all group-hover:scale-110">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        </div>
+
+                        {/* Card body */}
+                        <div className="p-4 bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/80 rounded-2xl space-y-3">
+                          {/* Title and delete action */}
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-0.5">
+                              <span className="text-xs font-bold text-foreground font-sans uppercase tracking-wider block">
+                                <span className="font-mono text-emerald-400 font-black mr-1.5">{typicalHours[mType] || "—"}</span>
+                                {mealNames[mType] || mType}
+                              </span>
+                              {meal.notes && <p className="text-[11px] text-muted-foreground italic leading-tight">&laquo; {meal.notes} &raquo;</p>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-emerald-500/10 text-emerald-400 font-mono text-[10.5px]">
+                                {totalCal} kcal
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => storeState.deleteMealLog(meal.id)}
+                                className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-500/10 p-0"
+                                title="Supprimer ce repas de la journée"
+                              >
+                                <Trash2 size={12} className="shrink-0" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Consumed items list */}
+                          <div className="text-[11px] space-y-1">
+                            <span className="text-[9.5px] uppercase font-bold text-muted-foreground block">Aliments et formules associés</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                              {meal.items.map((it, idx) => (
+                                <div key={idx} className="p-2 rounded-xl bg-background border border-border/45 flex justify-between items-center">
+                                  <div className="truncate pr-2">
+                                    <span className="font-semibold text-foreground block truncate">{it.foodName}</span>
+                                    <span className="text-[9.5px] text-muted-foreground font-mono">
+                                      {it.quantity} {it.unit} (~{Math.round(it.gramsSelected)}g)
+                                    </span>
+                                  </div>
+                                  <span className="font-mono text-[10px] text-emerald-500 font-bold shrink-0">{it.calories} kcal</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Dynamic warnings block if any item has missing micronutrients */}
+                          {warnings.length > 0 && (
+                            <div className="p-2 border border-amber-500/20 bg-amber-500/5 rounded-xl space-y-1 text-[10px]">
+                              {Array.from(new Set(warnings)).map((w, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5 text-amber-500 leading-tight">
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span>{w}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Row 4: Subjective variables & Macros */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2.5 border-t border-border/45 text-[10px]">
+                            {/* Pro/Carb/Fat Macros stats */}
+                            <div className="flex gap-2.5 items-center font-mono">
+                              <span className="bg-indigo-500/15 text-indigo-400 py-0.5 px-2 rounded font-bold">Pro: {totalPro.toFixed(1)}g</span>
+                              <span className="bg-amber-500/15 text-amber-400 py-0.5 px-2 rounded font-bold">Cho: {totalCarb.toFixed(1)}g</span>
+                              <span className="bg-red-500/15 text-red-500 py-0.5 px-2 rounded font-bold">Lip: {totalFat.toFixed(1)}g</span>
+                            </div>
+
+                            {/* Hunger/Fullness/Digestion indicators */}
+                            <div className="flex flex-wrap gap-2 text-[9px] uppercase font-bold text-muted-foreground md:justify-end">
+                              {meal.hungerBefore !== undefined && (
+                                <span className="bg-secondary p-1 rounded-sm">Faim: {hungerLabels[meal.hungerBefore] || meal.hungerBefore}</span>
+                              )}
+                              {meal.satietyAfter !== undefined && (
+                                <span className="bg-secondary p-1 rounded-sm">Satiété: {satietyLabels[meal.satietyAfter] || meal.satietyAfter}</span>
+                              )}
+                              {meal.digestionAfter !== undefined && (
+                                <span className="bg-secondary p-1 rounded-sm">Digestion: {digestionLabels[meal.digestionAfter] || meal.digestionAfter}</span>
+                              )}
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
+              </div>
+            )}
           </div>
 
           {/* P6 - Micronutriments section */}
@@ -397,6 +587,23 @@ export function Nutrition() {
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Personnalisez librement vos cibles nutritionnelles sans contraintes algorithmiques de régimes restrictifs.
             </p>
+
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-secondary/35 rounded-xl text-[11px] leading-none mb-1">
+              <button 
+                type="button"
+                onClick={() => setIsRestDay(false)}
+                className={`py-2 px-2.5 rounded-lg font-bold text-center transition-all ${!isRestDay ? "bg-emerald-500 text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"}`}
+              >
+                ⚡ Entraînement
+              </button>
+              <button 
+                type="button"
+                onClick={() => setIsRestDay(true)}
+                className={`py-2 px-2.5 rounded-lg font-bold text-center transition-all ${isRestDay ? "bg-indigo-500 text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"}`}
+              >
+                🔋 Jour de Repos
+              </button>
+            </div>
 
             <div className="space-y-3 pt-1">
               {/* Objective */}
@@ -507,6 +714,14 @@ export function Nutrition() {
               </div>
 
             </div>
+
+            <div className="pt-2.5 text-[10px] text-muted-foreground border-t border-border/60 flex justify-between items-center font-mono">
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Source : {userGoal.source || "Aura Recommandations"}
+              </span>
+              <span>Modifié : {userGoal.updatedAt ? new Date(userGoal.updatedAt).toLocaleDateString() : "Automatique"}</span>
+            </div>
           </div>
 
           {/* B1 Block - Diagnostic de complétude des données & limitations summary */}
@@ -587,29 +802,7 @@ export function Nutrition() {
             </div>
           </div>
 
-          {/* Slipped inline list of historical meals logged today */}
-          <div className="bento-card p-6 border border-border">
-            <h4 className="font-bold text-xs uppercase text-muted-foreground tracking-wider mb-3">Repas loggés aujourd'hui</h4>
-            {todayMeals.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground">Aucun repas saisi pour aujourd'hui</div>
-            ) : (
-              <div className="space-y-3">
-                {todayMeals.map((log) => (
-                  <div key={log.id} className="p-3 border rounded-xl border-border bg-secondary/5 space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold uppercase text-[9px] text-primary">{log.mealType}</span>
-                      <span className="font-mono font-bold text-emerald-500">
-                        {log.items.reduce((sum, item) => sum + (item.calories || 0), 0)} kcal
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground leading-tight truncate">
-                      {log.items.map(it => `${it.foodName} (${it.gramsSelected}g)`).join(', ')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+
 
           <div className="bento-card p-6 border border-border">
             <h4 className="font-bold text-sm mb-3 flex items-center gap-1.5">

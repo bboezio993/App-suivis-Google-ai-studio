@@ -4,7 +4,12 @@ import { internalFoodDatabase } from "../../domain/nutrition/foodDatabase";
 import { CoreNutrients } from "../../domain/nutrition/nutrientDefinitions";
 import { NormalizedMetric } from "../../types";
 
-export function buildNutritionDaySummary(mealLogs: MealLog[], dateStr: string, metrics: NormalizedMetric[] = []): NutritionDaySummary {
+export function buildNutritionDaySummary(
+  mealLogs: MealLog[], 
+  dateStr: string, 
+  metrics: NormalizedMetric[] = [],
+  state?: any
+): NutritionDaySummary {
   const dayLogs = mealLogs.filter(l => l.date === dateStr);
   const dayMetrics = metrics.filter(m => m.timestamp && m.timestamp.startsWith(dateStr));
   
@@ -191,19 +196,90 @@ export function buildNutritionDaySummary(mealLogs: MealLog[], dateStr: string, m
     };
   });
 
-  const isComplete = presentMeals.has("breakfast") && presentMeals.has("lunch") && presentMeals.has("dinner") && calories > 1200;
+  // Determine if this is an ongoing day (today block)
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isToday = (dateStr === todayStr);
+
+  const currentHour = new Date().getHours();
+
+  // Determine expected meals based on current hour and day type
+  const expectedMeals: ("breakfast" | "lunch" | "dinner")[] = [];
+  if (!isToday) {
+    expectedMeals.push("breakfast", "lunch", "dinner");
+  } else {
+    // Only expect meals if their typical hour range has passed
+    if (currentHour >= 10) expectedMeals.push("breakfast");
+    if (currentHour >= 15) expectedMeals.push("lunch");
+    if (currentHour >= 21) expectedMeals.push("dinner");
+  }
+
+  // Check which expected meals are missing
+  const missedExpectedMeals = expectedMeals.filter(m => !presentMeals.has(m));
+
+  // Determine plausible calorie threshold depending on profile
+  let targetCalThreshold = 1200;
+  let isProfileComplete = false;
+  const userProfile = state?.userProfile;
+  if (userProfile?.general?.weight && userProfile?.general?.height && userProfile?.general?.age && userProfile?.general?.gender) {
+    isProfileComplete = true;
+    const { weight: weightKg, height: heightCm, age, gender } = userProfile.general;
+    const s = gender === 'female' ? -161 : 5;
+    const userBmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s;
+    
+    if (isToday) {
+      // Scale expected minimum calories for the ongoing day
+      const ratio = currentHour < 10 ? 0.25 : currentHour < 15 ? 0.55 : currentHour < 21 ? 0.85 : 1.0;
+      targetCalThreshold = Math.round(userBmr * 0.55 * ratio);
+    } else {
+      targetCalThreshold = Math.round(userBmr * 0.6); // Base minimum target intake
+    }
+  } else {
+    // If profile is incomplete, use hour-scaled defaults for today
+    if (isToday) {
+      const ratio = currentHour < 10 ? 0.25 : currentHour < 15 ? 0.55 : currentHour < 21 ? 0.85 : 1.0;
+      targetCalThreshold = Math.round(1200 * ratio);
+    }
+  }
+  if (targetCalThreshold < 300) targetCalThreshold = 300; // safety lower bound
+
+  const totalLogsCount = dayLogs.length;
+  const hasLoggedWorkoutFueling = presentMeals.has("pre_workout") || presentMeals.has("post_workout") || presentMeals.has("intra_workout");
   
-  let confidence = isComplete ? 85 : (dayLogs.length >= 3 ? 60 : 30);
+  const meetsCaloriePlausibility = calories >= targetCalThreshold;
+  const hasExpectedMealsLogged = missedExpectedMeals.length === 0;
+
+  // Flexible completeness formulation
+  let isComplete = false;
+  if (isToday) {
+    if (expectedMeals.length === 0) {
+      isComplete = totalLogsCount >= 1 || calories > 150;
+    } else {
+      isComplete = hasExpectedMealsLogged && (meetsCaloriePlausibility || totalLogsCount >= 2 || hasLoggedWorkoutFueling);
+    }
+  } else {
+    isComplete = hasExpectedMealsLogged && (meetsCaloriePlausibility || totalLogsCount >= 3 || (totalLogsCount >= 2 && hasLoggedWorkoutFueling));
+  }
+
+  // Calculate confidence based on quality of log
+  let confidence = isComplete ? 85 : (dayLogs.length >= 3 ? 65 : 40);
   if (approximatedPortions > 1) confidence -= 15;
   if (recipesWithoutClearPortions > 0) confidence -= 10;
+  if (!isProfileComplete) confidence -= 10; // penalty for incomplete profile
   confidence = Math.max(10, confidence);
 
   const limits: string[] = [];
-  if (!isComplete) limits.push("Saisie alimentaire probablement incomplète (repas principaux manquants ou < 1200 kcal).");
+  if (!isComplete) {
+    if (isToday) {
+      limits.push("Journée en cours : repères d'apports nutritionnels à compléter au fil des heures.");
+    } else {
+      limits.push("Saisie alimentaire incomplète ou apports inférieurs au seuil d'activité estimé.");
+    }
+  }
   if (approximatedPortions > 0) limits.push(`${approximatedPortions} portion(s) évaluée(s) avec une précision incertaine.`);
   if (recipesWithoutClearPortions > 0) limits.push(`${recipesWithoutClearPortions} recette(s) sans portion claire consommée(s).`);
   if (water === 0) limits.push("Hydratation non renseignée.");
-  
+  if (!isProfileComplete) limits.push("Calculs basés sur des cibles par défaut : profil de l'athlète incomplet.");
+
   const missingMeals = (["breakfast", "lunch", "dinner"].filter(m => !presentMeals.has(m as any)) as any[]);
 
   return {

@@ -29,7 +29,7 @@ const MICRONUTRIENT_TARGETS: Record<string, { target: number; unit: string; name
 
 
 export function analyzeNutritionDay(state: AppState, dateStr: string): NutritionAnalysisResult {
-  const summary = buildNutritionDaySummary(state.mealLogs, dateStr, state.metrics);
+  const summary = buildNutritionDaySummary(state.mealLogs, dateStr, state.metrics, state);
   const weightKg = state.userProfile?.general?.weight || null;
   const heightCm = state.userProfile?.general?.height || null;
   const age = state.userProfile?.general?.age || null;
@@ -61,7 +61,9 @@ export function analyzeNutritionDay(state: AppState, dateStr: string): Nutrition
     .filter((m) => (m.type === "active_calories" || m.type === "activity_calories") && m.timestamp && m.timestamp.startsWith(dateStr))
     .reduce((a, b) => a + b.value, 0);
 
-  const estimatedExpenditureKcal = bmr !== null ? Math.round(bmr + activeCalToday) : null;
+  const hasGarminActivities = state.garminActivities.some((a) => a.date && a.date.startsWith(dateStr));
+  const hasGarmin = hasGarminActivities || activeCalToday > 0;
+  const estimatedExpenditureKcal = (bmr !== null && hasGarmin) ? Math.round(bmr + activeCalToday) : null;
   const energyBalance = estimatedExpenditureKcal !== null ? summary.totalCalories - estimatedExpenditureKcal : null;
 
   // Ratios macros
@@ -104,7 +106,7 @@ export function analyzeNutritionDay(state: AppState, dateStr: string): Nutrition
         value: val,
         unit: targetInfo.unit,
         ratio: Number(ratio.toFixed(2)),
-        status: ratio >= 0.75 ? "met" : "deficient"
+        status: ratio >= 0.75 ? "met" : "low"
       };
     }
   });
@@ -271,7 +273,7 @@ export function analyzeNutritionDay(state: AppState, dateStr: string): Nutrition
 export function runNutritionEngine(state: AppState): ModularEngineResult {
   const todayStr = new Date().toISOString().split("T")[0];
   const analysis = analyzeNutritionDay(state, todayStr);
-  const summary = buildNutritionDaySummary(state.mealLogs, todayStr, state.metrics);
+  const summary = buildNutritionDaySummary(state.mealLogs, todayStr, state.metrics, state);
 
   const dataUsed = ["meal_logs"];
   const dataMissing: string[] = [];
@@ -285,66 +287,172 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   let score = 50;
 
   if (analysis.energyIntakeKcal > 0) {
-    // Pro score mapping using dynamic targets
     const targetProteinGPerKg = state.userProfile?.nutritionGoal?.proteinGPerKg?.value ?? 1.8;
     const targetCarbsGPerKg = state.userProfile?.nutritionGoal?.carbsGPerKg?.value ?? 4.0;
+    const targetFiber = state.userProfile?.nutritionGoal?.fiber?.value ?? 25;
+    const targetHydration = state.userProfile?.nutritionGoal?.hydration?.value ?? 2000;
 
-    const proRatio = analysis.proteinGPerKg ? Math.min(2, analysis.proteinGPerKg / targetProteinGPerKg) : 1;
-    const carbsRatio = analysis.carbsGPerKg ? Math.min(2, analysis.carbsGPerKg / targetCarbsGPerKg) : 1;
-    const eaFactor = analysis.energyAvailability !== null 
-      ? (analysis.energyAvailability >= 30 ? 20 : 5) 
-      : 15;
+    // 1. Apport Protéique (Max 15)
+    const proRatio = analysis.proteinGPerKg ? Math.min(1.0, analysis.proteinGPerKg / targetProteinGPerKg) : 0.5;
+    const proteinPoints = Math.round(proRatio * 15);
 
-    score = Math.round((proRatio * 40) + (carbsRatio * 40) + eaFactor);
+    // 2. Apport Glucidique (Max 15)
+    const carbsRatio = analysis.carbsGPerKg ? Math.min(1.0, analysis.carbsGPerKg / targetCarbsGPerKg) : 0.5;
+    const carbsPoints = Math.round(carbsRatio * 15);
+
+    // 3. Disponibilité Énergétique (Max 10)
+    let eaPoints = 10;
+    if (analysis.energyAvailability !== null) {
+      if (analysis.energyAvailability < 30) eaPoints = 3;
+      else if (analysis.energyAvailability < 45) eaPoints = 8;
+    } else {
+      eaPoints = 7; // valeur par défaut prudente
+    }
+
+    // 4. Complétude de la Saisie (Max 15)
+    const completePoints = summary.isComplete ? 15 : 6;
+
+    // 5. Hydratation (Max 10)
+    const hydrationPoints = Math.round(Math.min(1.0, analysis.hydrationMl / targetHydration) * 10);
+
+    // 6. Fibres alimentaires (Max 10)
+    const fiberPoints = Math.round(Math.min(1.0, analysis.fiberG / targetFiber) * 10);
+
+    // 7. Précision & sources (Confiance portions, recettes claires) (Max 10)
+    let qualityPoints = 10;
+    if (summary.approximatedPortions > 1) qualityPoints -= 3;
+    if (summary.recipesWithoutClearPortions > 0) qualityPoints -= 3;
+    if (summary.foodsWithoutSource > 0) qualityPoints -= 2;
+    const missingNutrientsCount = summary.missingNutrients.length;
+    if (missingNutrientsCount > 4) qualityPoints -= 2;
+    qualityPoints = Math.max(0, qualityPoints);
+
+    // 8. Couverture Micronutritionnelle des minéraux/vitamines (Max 10)
+    const totalMicros = Object.keys(analysis.micronutrientCoverage).length;
+    const metMicros = Object.values(analysis.micronutrientCoverage).filter(m => m.status === "met").length;
+    const microRatio = totalMicros > 0 ? metMicros / totalMicros : 0.5;
+    const microPoints = Math.round(microRatio * 10);
+
+    // 9. Timing des nutriments autour effort (Max 5)
+    const timingPoints = Math.round((analysis.mealTiming.score / 100) * 5);
+
+    score = proteinPoints + carbsPoints + eaPoints + completePoints + hydrationPoints + fiberPoints + qualityPoints + microPoints + timingPoints;
     score = Math.min(100, Math.max(10, score));
 
-    if (proRatio >= 0.8) {
+    // Drivers
+    if (proRatio >= 0.85) {
       positiveDrivers.push({
         metricId: "protein_intake",
-        label: "Apport Protéique",
+        label: "Apport protéique ciblé",
         impact: "positive",
         value: `${analysis.proteinTotalG}g`,
-        note: analysis.proteinGPerKg ? `Ratio : ${analysis.proteinGPerKg} g/kg (cible: ${targetProteinGPerKg} g/kg).` : "Total protéique absorbé"
+        note: `Cible de ${targetProteinGPerKg} g/kg bien couverte.`
       });
     } else {
       negativeDrivers.push({
         metricId: "protein_intake",
-        label: "Apport Protéique bas",
+        label: "Apport protéique bas",
         impact: "negative",
         value: `${analysis.proteinTotalG}g`,
-        note: analysis.proteinGPerKg ? `Ratio insuffisant : ${analysis.proteinGPerKg} g/kg (cible: ${targetProteinGPerKg} g/kg).` : "Total protéique"
+        note: `Inférieur à la cible de ${targetProteinGPerKg} g/kg.`
       });
     }
 
-    if (analysis.hydrationMl >= 1500) {
+    if (carbsRatio >= 0.85) {
+      positiveDrivers.push({
+        metricId: "carbs_intake",
+        label: "Réserves de glycogène nourries",
+        impact: "positive",
+        value: `${analysis.carbsTotalG}g`,
+        note: `Apports glucidiques optimaux (${analysis.carbsGPerKg} g/kg) pour l'effort.`
+      });
+    } else {
+      negativeDrivers.push({
+        metricId: "carbs_intake",
+        label: "Glucides à compléter",
+        impact: "negative",
+        value: `${analysis.carbsTotalG}g`,
+        note: `Apport glucidique de ${analysis.carbsGPerKg || 0} g/kg en deçà de la cible.`
+      });
+    }
+
+    if (analysis.hydrationMl >= targetHydration) {
       positiveDrivers.push({
         metricId: "hydration",
-        label: "Hydratation Complète",
+        label: "Hydratation optimale",
         impact: "positive",
         value: `${(analysis.hydrationMl / 1000).toFixed(1)}L`,
-        note: "Objectif minimal journalier atteint."
+        note: `Objectif de ${(targetHydration / 1000).toFixed(1)}L atteint.`
+      });
+    } else {
+      negativeDrivers.push({
+        metricId: "hydration",
+        label: "Hydratation insuffisante",
+        impact: "negative",
+        value: `${(analysis.hydrationMl / 1000).toFixed(1)}L`,
+        note: `Cible minimale non atteinte (${(targetHydration / 1000).toFixed(1)}L).`
+      });
+    }
+
+    if (analysis.fiberG >= targetFiber) {
+      positiveDrivers.push({
+        metricId: "fiber",
+        label: "Soutien du transit (fibres)",
+        impact: "positive",
+        value: `${analysis.fiberG}g`,
+        note: "Objectif de fibres atteint pour soutenir la digestion."
+      });
+    } else if (analysis.fiberG > 0) {
+      negativeDrivers.push({
+        metricId: "fiber",
+        label: "Fibres à augmenter",
+        impact: "negative",
+        value: `${analysis.fiberG}g`,
+        note: `Cible requise : ${targetFiber}g.`
+      });
+    }
+
+    if (microRatio >= 0.7) {
+      positiveDrivers.push({
+        metricId: "micros",
+        label: "Variété micronutritionnelle",
+        impact: "positive",
+        value: `${metMicros}/${totalMicros}`,
+        note: "Couverture majoritaire des cofacteurs métaboliques clés."
+      });
+    } else if (metMicros < totalMicros / 2) {
+      negativeDrivers.push({
+        metricId: "micros",
+        label: "Micronutriments incomplets",
+        impact: "negative",
+        value: `${metMicros}/${totalMicros}`,
+        note: "Plusieurs vitamines et minéraux de la base d'estimation restent sous les repères."
       });
     }
 
     if (analysis.mealTiming.score < 70) {
       negativeDrivers.push({
         metricId: "meal_timing",
-        label: "Timing Péri-entraînement",
+        label: "Timing péri-effort à structurer",
         impact: "negative",
         value: `${analysis.mealTiming.score}/100`,
-        note: "Repas autour de l’effort non optimisés ou non renseignés."
+        note: "Repas pré, intra ou récupération post-séance absents ou incomplets."
       });
     }
   }
 
-  let status: "optimal" | "adequate" | "deficit" | "watch" = "adequate";
+  let status: "optimal" | "adequate" | "low" | "incomplete" | "watch" = "adequate";
   if (score > 80) status = "optimal";
-  else if (score < 40) status = "watch";
-  else if (score < 60) status = "deficit";
+  else if (score < 45) status = "watch";
+  else if (score < 65) status = "low";
 
-  let secureWording = "Disponibilité énergétique adéquate pour soutenir l'effort et la régulation cellulaire basale.";
-  if (status === "watch" || status === "deficit") {
-    secureWording = "Disponibilité énergétique possiblement basse si les apports nutritionnels saisis sont complets.";
+  if (!summary.isComplete) {
+    status = "incomplete";
+  }
+
+  let secureWording = "à interpréter avec les données de ressenti et sommeil disponibles. Disponibilité énergétique adéquate pour soutenir la récupération active.";
+  if (status === "watch" || status === "low" || status === "incomplete") {
+    secureWording = "à interpréter avec les données de ressenti de fatigue et de sommeil disponibles. Disponibilité énergétique basse possible.";
   }
 
   return {

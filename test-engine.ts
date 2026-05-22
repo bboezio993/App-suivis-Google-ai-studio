@@ -107,7 +107,7 @@ const noNutritionStateIncomplete = {
 } as unknown as AppState;
 const nutResIncomplete = runNutritionEngine(noNutritionStateIncomplete);
 assert.ok(
-  nutResIncomplete.limits.some(l => l.includes("incomplète")), 
+  nutResIncomplete.limits.some(l => l.toLowerCase().includes("incomplète") || l.toLowerCase().includes("compléter")), 
   "Nutrition logic must warn about incomplete day (only 1 meal)"
 );
 assert.ok(nutResIncomplete.confidence <= 50, "Confidence should be capped if meal logs are incomplete");

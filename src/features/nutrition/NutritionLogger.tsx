@@ -6,8 +6,43 @@ import { foodNutrientDatabase } from '../../domain/nutrition/foodNutrientValues'
 import { CoreNutrients } from '../../domain/nutrition/nutrientDefinitions';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Check, Search, ChevronRight, Apple, Flame, Award, AlertTriangle, Clipboard, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Check, Search, ChevronRight, Apple, Flame, Award, AlertTriangle, Clipboard, BookOpen, Heart } from 'lucide-react';
 import { MealItem, MealLog, Recipe } from '../../types';
+
+const frequentMealPresets = [
+  {
+    name: "Porridge Énergie Élite ⚡",
+    description: "Flocons d'avoine brute cuits, pomme fraîche croquante et isolat de whey protéine.",
+    calories: 618,
+    mealType: "breakfast",
+    items: [
+      { foodId: "flocons_avoine", foodName: "Flocons d'avoine brute", quantity: 100, unit: "g", gramsSelected: 100 },
+      { foodId: "pomme", foodName: "Pomme crue avec peau", quantity: 1, unit: "piece", gramsSelected: 150 },
+      { foodId: "whey_isolate", foodName: "Isolat de protéine (Whey Isolate)", quantity: 1, unit: "piece", gramsSelected: 30 }
+    ]
+  },
+  {
+    name: "Assiette Volaille Métabolique 🔄",
+    description: "Blanc de poulet tendre cuit, portion de riz blanc cuit avec filet d'huile d'olive de qualité.",
+    calories: 574,
+    mealType: "lunch",
+    items: [
+      { foodId: "poulet_blanc", foodName: "Blanc de poulet cuit", quantity: 150, unit: "g", gramsSelected: 150 },
+      { foodId: "riz_cuit", foodName: "Riz blanc cuit", quantity: 200, unit: "g", gramsSelected: 200 },
+      { foodId: "huile_olive", foodName: "Huile d'olive extra vierge", quantity: 15, unit: "ml", gramsSelected: 13.7 }
+    ]
+  },
+  {
+    name: "Shaker d'Effort Post-Course 🥛",
+    description: "Isolat de whey protéine ultra-pur mélangé à une banane pour reconstituer le glycogène.",
+    calories: 215,
+    mealType: "post_workout",
+    items: [
+      { foodId: "whey_isolate", foodName: "Isolat de protéine (Whey Isolate)", quantity: 1, unit: "piece", gramsSelected: 30 },
+      { foodId: "banane", foodName: "Banane fraîche", quantity: 1, unit: "piece", gramsSelected: 118 }
+    ]
+  }
+];
 
 export function NutritionLogger() {
   const addMealLog = useStore(state => state.addMealLog);
@@ -16,6 +51,30 @@ export function NutritionLogger() {
   const deleteRecipeFromStore = useStore(state => state.deleteRecipe);
   const addAllergenBypassLog = useStore(state => state.addAllergenBypassLog);
   const userProfile = useStore(state => state.userProfile);
+  const updateUserProfile = useStore(state => state.updateUserProfile);
+
+  const favoriteFoodIds = userProfile?.favoriteFoodIds || [];
+  const favoriteRecipeIds = userProfile?.favoriteRecipeIds || [];
+
+  const toggleFavoriteFood = (foodId: string) => {
+    let updated: string[];
+    if (favoriteFoodIds.includes(foodId)) {
+      updated = favoriteFoodIds.filter(id => id !== foodId);
+    } else {
+      updated = [...favoriteFoodIds, foodId];
+    }
+    updateUserProfile({ favoriteFoodIds: updated });
+  };
+
+  const toggleFavoriteRecipe = (recipeId: string) => {
+    let updated: string[];
+    if (favoriteRecipeIds.includes(recipeId)) {
+      updated = favoriteRecipeIds.filter(id => id !== recipeId);
+    } else {
+      updated = [...favoriteRecipeIds, recipeId];
+    }
+    updateUserProfile({ favoriteRecipeIds: updated });
+  };
 
   const [mealType, setMealType] = useState<MealLog['mealType']>('breakfast');
   const [search, setSearch] = useState('');
@@ -25,7 +84,7 @@ export function NutritionLogger() {
   const [mealItemRawCooked, setMealItemRawCooked] = useState<"raw" | "cooked">("raw");
   
   // Interactive Tab Selection
-  const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes'>('ingredients');
+  const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes' | 'favorites'>('ingredients');
 
   // Custom Recipe Creator states
   const [showRecipeCreator, setShowRecipeCreator] = useState(false);
@@ -319,7 +378,7 @@ export function NutritionLogger() {
             >
               <span className="flex items-center justify-center gap-1.5">
                 <Apple size={14} />
-                Ingrédients individuels
+                Ingrédients
               </span>
             </button>
             <button
@@ -332,6 +391,18 @@ export function NutritionLogger() {
               <span className="flex items-center justify-center gap-1.5">
                 <BookOpen size={14} />
                 Recettes ({internalRecipes.length + storeRecipes.length})
+              </span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('favorites'); setSelectedFoodId(''); }}
+              type="button"
+              className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition-all ${
+                activeTab === 'favorites' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <Heart size={14} className="text-red-500 fill-red-500" />
+                Saisie Rapide & Favoris
               </span>
             </button>
           </div>
@@ -372,30 +443,52 @@ export function NutritionLogger() {
                   ) : (
                     foundFoods.map(f => {
                       const allergen = isAllergic(f.name);
+                      const isFav = favoriteFoodIds.includes(f.id);
                       return (
-                        <button
+                        <div
                           key={f.id}
-                          onClick={() => {
-                            handleSelectFood(f.id);
-                            setBypassAllergenFoodId(null);
-                          }}
-                          className={`w-full text-left p-2 hover:bg-secondary/40 rounded-lg text-xs flex justify-between items-center transition-all ${
+                          className={`w-full p-1.5 hover:bg-secondary/35 rounded-xl text-xs flex justify-between items-center transition-all border border-transparent hover:border-border/40 ${
                             allergen ? 'border-l-2 border-red-500 pl-3 bg-red-500/5' : ''
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-foreground">{f.name}</span>
-                              {allergen && (
-                                <Badge variant="outline" className="border-red-500/20 text-red-500 text-[8px] font-bold px-1.5">
-                                  ⚠️ Allergène : {allergen}
-                                </Badge>
-                              )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSelectFood(f.id);
+                              setBypassAllergenFoodId(null);
+                            }}
+                            className="flex-1 text-left"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">{f.name}</span>
+                                {allergen && (
+                                  <Badge variant="outline" className="border-red-500/20 text-red-500 text-[8px] font-bold px-1.5">
+                                    ⚠️ Allergène : {allergen}
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground block">{f.category}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground block">{f.category}</span>
+                          </button>
+                          
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge variant="secondary" className="font-mono text-[9px]">{f.calories} kcal/100g</Badge>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavoriteFood(f.id);
+                              }}
+                              className={`p-1 rounded-lg hover:bg-red-500/10 transition-colors ${
+                                isFav ? 'text-red-500 font-bold' : 'text-muted-foreground hover:text-red-500'
+                              }`}
+                              title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+                            >
+                              <Heart size={13} className={isFav ? "fill-current text-red-400" : ""} />
+                            </button>
                           </div>
-                          <Badge variant="secondary" className="font-mono text-[9px]">{f.calories} kcal/100g</Badge>
-                        </button>
+                        </div>
                       );
                     })
                   )}
@@ -542,6 +635,167 @@ export function NutritionLogger() {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'favorites' && (
+            <div className="space-y-6">
+              <div>
+                <h5 className="text-xs font-bold uppercase text-foreground mb-1">⚡ Saisie Immédiate (&lt; 10 sec)</h5>
+                <p className="text-[10px] text-muted-foreground leading-normal">
+                  Ajoutez un repas d’effort ou une formule métabolique type en un clic pour maintenir la régularité sans effort.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  {frequentMealPresets.map((preset, idx) => (
+                    <div key={idx} className="p-3.5 border border-border bg-gradient-to-br from-emerald-500/[0.02] to-secondary/35 rounded-2xl flex flex-col justify-between space-y-3">
+                      <div>
+                        <span className="text-[9px] uppercase font-black text-emerald-500 font-mono tracking-wider">{preset.mealType === 'breakfast' ? 'Matin 🍳' : preset.mealType === 'lunch' ? 'Midi 🥗' : preset.mealType === 'post_workout' ? 'Récupération 🥛' : 'Collation 🍎'}</span>
+                        <h6 className="font-bold text-xs text-foreground mt-0.5">{preset.name}</h6>
+                        <p className="text-[10.5px] text-muted-foreground font-medium leading-snug mt-1">{preset.description}</p>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                        <span className="font-mono text-[10.5px] font-bold text-emerald-500">{preset.calories} kcal</span>
+                        <Button
+                          onClick={() => {
+                            // Map preset items to full MealItems (calculating nutrients from database)
+                            const loggedItems = preset.items.map(it => {
+                              const food = internalFoodDatabase.find(f => f.id === it.foodId);
+                              const factor = it.gramsSelected / 100;
+                              return {
+                                foodId: it.foodId,
+                                foodName: it.foodName,
+                                quantity: it.quantity,
+                                unit: it.unit,
+                                gramsSelected: it.gramsSelected,
+                                calories: food ? Math.round(food.calories * factor) : 0,
+                                protein: food ? Number((food.protein * factor).toFixed(1)) : 0,
+                                carbs: food ? Number((food.carbs * factor).toFixed(1)) : 0,
+                                fat: food ? Number((food.fat * factor).toFixed(1)) : 0
+                              };
+                            });
+
+                            const log: MealLog = {
+                              id: `meal_frequent_${Date.now()}`,
+                              date: new Date().toISOString().split('T')[0],
+                              mealType: preset.mealType as any,
+                              items: loggedItems,
+                              hungerBefore: 3,
+                              satietyAfter: 3,
+                              digestionAfter: 3,
+                              notes: `Saisie rapide : ${preset.name}`
+                            };
+
+                            addMealLog(log);
+                            setSuccess(true);
+                            setTimeout(() => setSuccess(false), 3000);
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] h-7 px-3.5 py-1 font-bold rounded-lg"
+                        >
+                          Enregistrer
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-3">
+                <h5 className="text-xs font-bold uppercase text-foreground">❤️ Vos Ingrédients Favoris</h5>
+                {favoriteFoodIds.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground italic leading-normal">
+                    Aucun ingrédient favori. Cliquez sur le cœur à côté d'un aliment dans l'onglet "Ingrédients" pour le retrouver ici.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {internalFoodDatabase
+                      .filter(f => favoriteFoodIds.includes(f.id))
+                      .map(f => (
+                        <div key={f.id} className="p-2.5 border border-border bg-background rounded-xl flex justify-between items-center bg-secondary/5">
+                          <div className="truncate pr-2">
+                            <span className="font-bold text-xs truncate block">{f.name}</span>
+                            <span className="text-[9.5px] text-muted-foreground font-mono">{f.calories} kcal / 100g</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                toggleFavoriteFood(f.id);
+                              }}
+                              className="h-7 w-7 p-0 text-red-500 hover:bg-red-500/10 shrink-0"
+                              title="Retirer des favoris"
+                            >
+                              <Heart size={12} className="fill-current" />
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                handleSelectFood(f.id);
+                                setActiveTab('ingredients');
+                              }}
+                              className="h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[9.5px] font-bold rounded-lg"
+                            >
+                              Saisir
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-border/60 pt-4 space-y-3">
+                <h5 className="text-xs font-bold uppercase text-foreground">❤️ Vos Recettes Favorites</h5>
+                {favoriteRecipeIds.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground italic leading-normal">
+                    Aucune recette favorite. Marquez vos recettes comme favorites pour un import instantané.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {[...internalRecipes, ...storeRecipes]
+                      .filter(r => favoriteRecipeIds.includes(r.id))
+                      .map(rcp => {
+                        const totCals = rcp.items.reduce((sum, item) => {
+                          const dbFood = internalFoodDatabase.find(f => f.id === item.foodId);
+                          return sum + (dbFood ? Math.round(dbFood.calories * (item.gramsSelected / 100)) : 0);
+                        }, 0);
+
+                        return (
+                          <div key={rcp.id} className="p-2.5 border border-border bg-background rounded-xl flex justify-between items-center bg-secondary/5">
+                            <div className="truncate pr-2">
+                              <span className="font-bold text-xs truncate block">{rcp.name}</span>
+                              <span className="text-[9.5px] text-muted-foreground font-mono">{totCals} kcal</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                variant="ghost"
+                                onClick={() => {
+                                  toggleFavoriteRecipe(rcp.id);
+                                }}
+                                className="h-7 w-7 p-0 text-red-500 hover:bg-red-500/10 shrink-0"
+                                title="Retirer des favoris"
+                              >
+                                <Heart size={12} className="fill-current" />
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setImportingRecipe(rcp);
+                                  setImportRecipeMode("portions");
+                                  setImportRecipePortions(1);
+                                  setImportRecipeGrams(rcp.finalWeightGrams || 0);
+                                  setActiveTab('recipes');
+                                }}
+                                className="h-7 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[9.5px] font-bold rounded-lg"
+                              >
+                                Importer
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
