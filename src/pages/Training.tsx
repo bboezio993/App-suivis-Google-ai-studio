@@ -134,7 +134,7 @@ export function Training() {
               <strong>0.8 - 1.3 :</strong> Zone optimale (Sweet spot)
             </li>
             <li>
-              <strong>&gt; 1.5 :</strong> Zone de danger (Risque de blessure
+              <strong>&gt; 1.5 :</strong> Zone de vigilance (Risque de blessure
               doublé)
             </li>
           </ul>

@@ -68,7 +68,7 @@ export function runBaselineEngine(state: AppState): ModularEngineResult {
     secureWording = "Tendance préliminaire. (14 à 27 jours de recul). L'analyse est encore basique.";
   } else if (minMaturity === "exploratory") {
     status = "calibrating";
-    secureWording = "Phase exploratoire. Moins de 14 jours de données disponibles. Interprétation non clinique.";
+    secureWording = "Phase exploratoire. Moins de 14 jours de données disponibles. Interprétation prudente.";
     limits.push("Le recul est trop faible pour des déductions statistiques fiables.");
   } else {
     limits.push("Moins de 5 points de données enregistrés pour certaines métriques.");

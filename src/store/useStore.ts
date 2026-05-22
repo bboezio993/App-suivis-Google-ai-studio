@@ -288,6 +288,8 @@ export const useStore = create<AppState>()(
           hooperLogs: state.hooperLogs,
           sessionRpeLogs: state.sessionRpeLogs,
           mealLogs: state.mealLogs,
+          recipes: state.recipes,
+          allergenBypassLogs: state.allergenBypassLogs,
           painLogs: state.painLogs,
           contextLogs: state.contextLogs,
           userProfile: state.userProfile,
@@ -306,6 +308,8 @@ export const useStore = create<AppState>()(
           }
           if (domain === "meals" || domain === "all") {
             updates.mealLogs = [];
+            updates.recipes = [];
+            updates.allergenBypassLogs = [];
           }
           if (domain === "pains" || domain === "all") {
             updates.painLogs = [];

@@ -241,7 +241,7 @@ export function Connections() {
           <div className="bento-card p-6">
             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <Cpu className="text-primary" size={20} />
-              Modèles mathématiques & Indicateurs de charge clinique
+              Modèles mathématiques & Indicateurs de charge et vigilance
             </h3>
             <p className="text-sm text-muted-foreground mb-6">
               Aura Elite calcule de façon autonome des variables de charge aiguë et chronique sans dépendre d'algorithmes opaques. Voici l'état actuel de vos indicateurs calculés :
@@ -261,7 +261,7 @@ export function Connections() {
                 title="ACWR (Charge relative)"
                 value={engineScores?.acwr ? engineScores.acwr.toFixed(2) : "1.05"}
                 desc="Le ratio de votre charge hebdomadaire (aiguë) sur votre charge lissée (chronique)."
-                status={engineScores?.acwr && engineScores.acwr > 1.5 ? "danger" : "normal"}
+                status={engineScores?.acwr && engineScores.acwr > 1.5 ? "caution" : "normal"}
               />
 
               <CalculatedIndicatorCard 
@@ -341,7 +341,7 @@ export function Connections() {
               Sécurité, Contrôle RGPD & Privauté Globale
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-6">
-              Aura Elite garantit la pleine souveraineté de vos données cliniques et sportives. L'intégralité de vos informations personnelles réside exclusivement dans votre stockage de navigateur local. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
+              Aura Elite garantit la pleine souveraineté de vos données personnelles, sportives et subjectives. L'intégralité de vos informations personnelles réside exclusivement dans votre stockage de navigateur local. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -349,7 +349,7 @@ export function Connections() {
                 <div>
                   <h4 className="font-bold text-xs uppercase text-muted-foreground tracking-wider mb-1">Sauvegarde & Portabilité (JSON)</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Téléchargez instantanément l'intégralité de votre profil clinique, alimentaire, sportif et vos métriques brutes sous un format structuré JSON portable (conforme à l'article 20 du RGPD).
+                    Téléchargez instantanément l'intégralité de votre profil utilisateur, alimentaire, sportif et vos métriques brutes sous un format structuré JSON portable (conforme à l'article 20 du RGPD).
                   </p>
                 </div>
                 <div>
@@ -437,7 +437,7 @@ function CalculatedIndicatorCard({ icon, title, value, desc, status }: { icon: R
           {icon}
         </div>
         <Badge variant="outline" className={`text-[10px] font-mono border-none py-0.5 px-2 uppercase ${
-          status === 'danger' || status === 'critical' ? 'bg-red-500/10 text-red-500' : 
+          status === 'caution' || status === 'critical' ? 'bg-red-500/10 text-red-500' : 
           status === 'optimal' || status === 'recovered' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'
         }`}>
           {status}

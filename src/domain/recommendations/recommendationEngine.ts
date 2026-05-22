@@ -46,7 +46,7 @@ export function generatePersonalizedRecommendations(
   // 1. ACWR Warning
   if (scores.acwr && scores.acwr > 1.5) {
     recommendations.push({
-      id: "rec_acwr_danger",
+      id: "rec_acwr_caution",
       title: "Charge récente élevée par rapport à votre historique",
       category: "training",
       priority: "high",
@@ -129,7 +129,7 @@ export function generatePersonalizedRecommendations(
       scientificClaim: "La régularité du cycle veille-sommeil est le facteur prépondérant dans l'assimilation d'une charge d'entraînement.",
       confidence: 80,
       evidenceLevel: "robust",
-      limitations: ["L'estimation Garmin des phases d'éveil nocturne n'est pas clinique"],
+      limitations: ["L'estimation Garmin des phases d'éveil nocturne n'a pas de valeur diagnostique"],
       basedOn: ["sleep_duration"],
       notMedicalAdvice: true
     });

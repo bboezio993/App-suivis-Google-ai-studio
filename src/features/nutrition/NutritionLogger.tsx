@@ -28,10 +28,12 @@ export function NutritionLogger() {
   const [showRecipeCreator, setShowRecipeCreator] = useState(false);
   const [recipeName, setRecipeName] = useState('');
   const [recipeDescription, setRecipeDescription] = useState('');
+  const [recipeNumberOfPortions, setRecipeNumberOfPortions] = useState<number>(1);
+  const [recipeWeightGrams, setRecipeWeightGrams] = useState<number>(0);
   const [recipeSaveSuccess, setRecipeSaveSuccess] = useState(false);
 
   // Allergies
-  const clinicalAllergies = userProfile?.health?.allergies || [];
+  const userAllergies = userProfile?.health?.allergies || [];
   const [bypassAllergenFoodId, setBypassAllergenFoodId] = useState<string | null>(null);
 
   // Temporary list of items in the current meal being composed
@@ -55,7 +57,7 @@ export function NutritionLogger() {
 
   const isAllergic = (foodName: string) => {
     const nameLower = foodName.toLowerCase();
-    for (const allergy of clinicalAllergies) {
+    for (const allergy of userAllergies) {
       const aLower = allergy.toLowerCase().trim();
       if (!aLower) continue;
       
@@ -103,10 +105,34 @@ export function NutritionLogger() {
 
   const handleCreateRecipe = () => {
     if (!recipeName || items.length === 0) return;
+    
+    const maxConfidence = 100;
+    const nutritionTotal = items.reduce((acc, it) => ({
+      calories: acc.calories + (it.calories || 0),
+      protein: acc.protein + (it.protein || 0),
+      carbs: acc.carbs + (it.carbs || 0),
+      fat: acc.fat + (it.fat || 0)
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+    const totalRawGrams = items.reduce((acc, it) => acc + (it.gramsSelected || 0), 0);
+    const resolvedFinalWeight = recipeWeightGrams > 0 ? recipeWeightGrams : totalRawGrams;
+    const portions = recipeNumberOfPortions > 0 ? recipeNumberOfPortions : 1;
+
     const newRecipe: Recipe = {
       id: `recipe_${Date.now()}`,
       name: recipeName,
       description: recipeDescription || "Mélange personnalisé de récupération",
+      finalWeightGrams: resolvedFinalWeight,
+      numberOfPortions: portions,
+      totalNutrition: nutritionTotal,
+      nutritionPerPortion: {
+        calories: Number((nutritionTotal.calories / portions).toFixed(0)),
+        protein: Number((nutritionTotal.protein / portions).toFixed(1)),
+        carbs: Number((nutritionTotal.carbs / portions).toFixed(1)),
+        fat: Number((nutritionTotal.fat / portions).toFixed(1))
+      },
+      createdAt: new Date().toISOString(),
+      nutritionVersion: "1.0",
       items: items.map(it => ({
         foodId: it.foodId,
         foodName: it.foodName,
@@ -115,12 +141,18 @@ export function NutritionLogger() {
         gramsSelected: it.gramsSelected,
         rawCookedState: it.rawCookedState,
         conversionConfidence: it.conversionConfidence,
-        conversionAssumptions: it.conversionAssumptions
+        conversionAssumptions: it.conversionAssumptions,
+        calories: it.calories,
+        protein: it.protein,
+        carbs: it.carbs,
+        fat: it.fat
       }))
     };
     addRecipeToStore(newRecipe);
     setRecipeName('');
     setRecipeDescription('');
+    setRecipeNumberOfPortions(1);
+    setRecipeWeightGrams(0);
     setShowRecipeCreator(false);
     setRecipeSaveSuccess(true);
     setTimeout(() => setRecipeSaveSuccess(false), 3000);
@@ -222,6 +254,9 @@ export function NutritionLogger() {
         quantity: it.quantity,
         unit: it.unit,
         gramsSelected: it.gramsSelected,
+        rawCookedState: it.rawCookedState,
+        conversionConfidence: it.conversionConfidence,
+        conversionAssumptions: it.conversionAssumptions,
         calories: it.calories,
         protein: it.protein,
         carbs: it.carbs,
@@ -713,6 +748,22 @@ export function NutritionLogger() {
                         onChange={(e) => setRecipeDescription(e.target.value)}
                         className="w-full text-xs p-2 bg-background border border-border rounded-lg"
                       />
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          placeholder="Poids final net (g)"
+                          value={recipeWeightGrams > 0 ? recipeWeightGrams : ''}
+                          onChange={(e) => setRecipeWeightGrams(parseInt(e.target.value) || 0)}
+                          className="w-1/2 text-xs p-2 bg-background border border-border rounded-lg"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Nombre de portions"
+                          value={recipeNumberOfPortions > 0 ? recipeNumberOfPortions : ''}
+                          onChange={(e) => setRecipeNumberOfPortions(parseInt(e.target.value) || 1)}
+                          className="w-1/2 text-xs p-2 bg-background border border-border rounded-lg"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-2 justify-end">

@@ -85,11 +85,11 @@ export function runContextEngine(state: AppState): ModularEngineResult {
     }
 
     if (latestContext.meds) {
-      activeFactors.push("Fatigue / Traitement déclaré");
+      activeFactors.push("Fatigue / Indisposition déclarée");
       score -= 30;
       negativeDrivers.push({
         metricId: "context_health",
-        label: "Indisposition ou traitement",
+        label: "Indisposition passagère",
         impact: "negative",
         value: "Signalé",
         note: "Disponibilité de l'organisme réduite de manière préventive."

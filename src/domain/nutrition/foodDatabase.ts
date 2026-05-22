@@ -4,6 +4,10 @@ export const internalFoodDatabase: FoodItem[] = [
   {
     id: "poulet_blanc",
     source: "ciqual",
+    sourceFoodId: "26002",
+    sourceVersion: "2020",
+    sourceName: "Ciqual 2020",
+    importDate: "2026-05-22",
     name: "Blanc de poulet cuit",
     normalizedName: "blanc de poulet cuit",
     category: "Viandes, œufs, poissons",
@@ -24,6 +28,10 @@ export const internalFoodDatabase: FoodItem[] = [
   {
     id: "pates_crues",
     source: "ciqual",
+    sourceFoodId: "9312",
+    sourceVersion: "2020",
+    sourceName: "Ciqual 2020",
+    importDate: "2026-05-22",
     name: "Pâtes sèches standards (crues)",
     normalizedName: "pates seches standards crues",
     category: "Céréales et pommes de terre",
@@ -45,6 +53,10 @@ export const internalFoodDatabase: FoodItem[] = [
   {
     id: "pates_cuites",
     source: "ciqual",
+    sourceFoodId: "9313",
+    sourceVersion: "2020",
+    sourceName: "Ciqual 2020",
+    importDate: "2026-05-22",
     name: "Pâtes cuites à l'eau (sans sel)",
     normalizedName: "pates cuites a l eau sans sel",
     category: "Céréales et pommes de terre",

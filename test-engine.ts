@@ -119,5 +119,59 @@ assert.ok(metricRegistry["respiration_rate"], "respiration_rate must be register
 assert.ok(metricRegistry["hydration_volume"], "hydration_volume must be registered");
 console.log("✅ Metric Registry contains expected types");
 
+// 4. Sprint Nutrition P0 Tests
+console.log("--- Sprint Nutrition V1 Tests ---");
+
+const weightlessState = {
+  ...mockState,
+  userProfile: {
+    ...mockState.userProfile,
+    general: {
+      ...mockState.userProfile.general,
+      weight: undefined
+    }
+  },
+  mealLogs: [
+    {
+      id: "l_test_1",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "lunch",
+      items: [{ 
+        foodId: "f_2", foodName: "Chicken", quantity: 1, unit: "g", gramsSelected: 200, 
+        rawCookedState: "raw", conversionConfidence: 80, conversionAssumptions: "Poulet cru",
+        calories: 600, protein: 40, carbs: 50, fat: 20 
+      }]
+    },
+    {
+      id: "l_test_2",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "breakfast",
+      items: [{ 
+        foodId: "f_3", foodName: "Eggs", quantity: 1, unit: "g", gramsSelected: 200, 
+        calories: 400, protein: 30, carbs: 10, fat: 20 
+      }]
+    },
+    {
+      id: "l_test_3",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "dinner",
+      items: [{ 
+        foodId: "f_3", foodName: "Fish", quantity: 1, unit: "g", gramsSelected: 200, 
+        calories: 300, protein: 30, carbs: 10, fat: 5
+      }]
+    }
+  ]
+} as unknown as AppState;
+
+const nutResMissingWeight = runNutritionEngine(weightlessState);
+console.log("Limits : ", nutResMissingWeight.limits);
+console.log("Confidence: ", nutResMissingWeight.confidence);
+assert.ok(nutResMissingWeight.limits.some(l => l.includes("poids manquant")), "Must warn about missing weight and not fallback to 70kg");
+assert.ok(nutResMissingWeight.confidence < 80, "Confidence should drop if BMR and weight are unknown");
+assert.ok(weightlessState.mealLogs[0].items[0].rawCookedState === "raw", "MealLog must preserve rawCookedState");
+assert.ok(weightlessState.mealLogs[0].items[0].conversionConfidence === 80, "MealLog must preserve conversionConfidence");
+assert.ok(weightlessState.mealLogs[0].items[0].conversionAssumptions === "Poulet cru", "MealLog must preserve conversionAssumptions");
+console.log("✅ Custom MealLogs retain conversion assumptions and engine safely handles missing weight");
+
 console.log("=== All Tests Passed ===");
 
