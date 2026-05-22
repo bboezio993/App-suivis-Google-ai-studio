@@ -1,3 +1,5 @@
+import { NutritionGoal } from "../domain/nutrition/foodTypes";
+
 export type ReadinessScore = number; // 0-100
 
 export type DataSource = "garmin" | "manual" | "derived";
@@ -47,6 +49,7 @@ export interface UserProfile {
     notificationsEnabled: boolean;
     dataSharingConsent: boolean;
   };
+  nutritionGoal?: NutritionGoal;
 }
 
 export interface MenstrualLog {

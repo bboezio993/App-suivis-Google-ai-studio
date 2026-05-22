@@ -44,6 +44,17 @@ Aura Elite suit une conception de stockage local prioritaire :
 - En version Web/Preview : les données subjectives, incluant les questionnaires de forme physiologiques, douleurs, repas et constantes féminines sont conservées localement dans `IndexedDB` en mode `local-only` pour une sécurité maximale durant les itérations.
 - Si le déploiement de **Firebase Firestore** est activé : la synchronisation nécessitera alors le renforcement de toutes les collections log avec des Règles de Sécurité fortes isolant strictement chaque profil.
 
+### Matrice de Stockage et Vie Privée
+
+| Catégorie de Donnée | Stockage Local | Cloud (Firestore) | Export (JSON) | Suppression locale | Suppression distante |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Profil physique** | oui | disponible | oui | oui | à implémenter |
+| **Métriques Garmin** | oui | disponible | oui | oui | à implémenter |
+| **Activités & Entrainements** | oui | disponible | oui | oui | à implémenter |
+| **Nutrition (Meal Logs)**| oui | non V1 | oui | oui | n/a |
+| **Douleurs** | oui | non V1 | oui | oui | n/a |
+| **Humeur & Contexte** | oui | non V1 | oui | oui | n/a |
+
 ## Nutrition : Limites actuelles
 
 Pour maintenir une fiabilité analytique, le modèle énergétique actuel exige une base de profils corporels complète (poids, taille, masse grasse). Sans ces informations, l'application neutralise le niveau de certitude quant au risque de déficit et bloque ses estimations.

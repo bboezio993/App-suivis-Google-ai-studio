@@ -278,5 +278,97 @@ assert.ok(summaryMicro.micronutrients.length > 0, "Summary must aggregate micron
 assert.ok(summaryMicro.micronutrients.some(m => m.nutrientId === "sodium"), "Sodium should be present in aggregated micronutrients");
 console.log("✅ Micronutrient aggregation and missing tracking fully verified");
 
+// 6. Extra Specific Sprint Nutrition Tests
+console.log("--- Extra V1 Robustness Tests ---");
+
+// Test A : Somme de plusieurs entrées d'hydratation (P0-1)
+const currentDayStr = new Date().toISOString().split("T")[0];
+const hydrationState = {
+  ...mockState,
+  metrics: [
+    { id: "h1", source: "manual", timestamp: currentDayStr + "T08:00:00Z", type: "hydration_volume", value: 250, unit: "ml", confidenceScore: 100 },
+    { id: "h2", source: "manual", timestamp: currentDayStr + "T12:00:00Z", type: "hydration_volume", value: 250, unit: "ml", confidenceScore: 100 },
+    { id: "h3", source: "manual", timestamp: currentDayStr + "T16:00:00Z", type: "hydration_volume", value: 250, unit: "ml", confidenceScore: 100 },
+    { id: "h4", source: "manual", timestamp: currentDayStr + "T20:00:00Z", type: "hydration_volume", value: 250, unit: "ml", confidenceScore: 100 }
+  ]
+} as unknown as AppState;
+
+const hydrationSummary = buildNutritionDaySummary([], currentDayStr, hydrationState.metrics);
+assert.strictEqual(hydrationSummary.totalHydrationMl, 1000, "Hydration sum must aggregate multiple entries accurately (4x250ml = 1000ml)");
+console.log("✅ Hydration Sum Aggregation validated: 4 x 250ml = 1000ml");
+
+// Test B : Chargement d'ingrédients de recette complexe
+const complexRecipe: Recipe = {
+  id: "recipe_pasta_salmon",
+  name: "Pâtes au Saumon Premium",
+  numberOfPortions: 4,
+  finalWeightGrams: 1000,
+  items: [
+    { foodId: "pates_cuites", foodName: "Pâtes cuites", quantity: 800, unit: "g", gramsSelected: 800, calories: 1000, protein: 30, carbs: 200, fat: 5 },
+    { foodId: "saumon", foodName: "Gravlax de saumon", quantity: 200, unit: "g", gramsSelected: 200, calories: 400, protein: 40, carbs: 0, fat: 25 }
+  ],
+  totalNutrition: { calories: 1400, protein: 70, carbs: 200, fat: 30 }
+};
+
+const recipeMealItem = resolveRecipeToMealItem(complexRecipe, "portions", 1); // 1 portion out of 4 (ratio: 0.25)
+assert.strictEqual(recipeMealItem.recipeRatio, 0.25, "Recipe ratio for 1 portion of 4 must be 0.25");
+assert.strictEqual(recipeMealItem.calories, 359, "Calories must be resolved and scaled from internal food DB (resolved cooked pasta + cooked salmon)");
+assert.strictEqual(recipeMealItem.protein, 20.5, "Proteins must be resolved and scaled from internal food DB (resolved cooked pasta + cooked salmon)");
+console.log("✅ Complex recipe ingredient scaling and portion mapping validated");
+
+// Test C : Impact des micronutriments manquants (isMissing: true) et aliments sans estimation
+const customMealLogsWithMissingMicros = [
+  {
+    id: "l_missing_micro",
+    date: currentDayStr,
+    mealType: "lunch" as const,
+    items: [
+      {
+        foodId: "whey_isolate", // iron & zinc are marked isMissing in database
+        foodName: "Whey Isolate Shake",
+        quantity: 30,
+        unit: "g",
+        gramsSelected: 30,
+        calories: 110,
+        protein: 26,
+        carbs: 1,
+        fat: 0
+      }
+    ]
+  }
+];
+
+const missingMicroSummary = buildNutritionDaySummary(customMealLogsWithMissingMicros, currentDayStr);
+const missingMicroAnalysis = analyzeNutritionDay({ ...mockState, mealLogs: customMealLogsWithMissingMicros } as unknown as AppState, currentDayStr);
+
+// Verify iron in whey is correctly labeled as unmeasured
+const ironCoverage = missingMicroAnalysis.micronutrientCoverage["iron"];
+assert.strictEqual(ironCoverage.status, "unmeasured", "Micronutrients marked as isMissing in database must result in 'unmeasured' coverage status");
+console.log("✅ Missing estimates and isMissing:true values correctly yield 'unmeasured' status");
+
+// Test D : Absence de séance Garmin oû d'un profil pour la balance
+const noGarminNoProfileState = {
+  ...mockState,
+  userProfile: {
+    general: {
+      name: "Tester",
+      age: null,
+      gender: "",
+      height: null,
+      weight: null,
+      activityLevel: "",
+      primaryGoal: ""
+    }
+  },
+  garminActivities: [], // No Garmin activities
+  mealLogs: []
+} as unknown as AppState;
+
+const emptyAnalysis = analyzeNutritionDay(noGarminNoProfileState, currentDayStr);
+assert.strictEqual(emptyAnalysis.mealTiming.score, 100, "Absence of Garmin activities must yield neutral timing score of 100");
+assert.strictEqual(emptyAnalysis.energyBalance, null, "Absence of complete profile must prevent balance calculation (energyBalance should be null)");
+assert.ok(emptyAnalysis.limitations.some(l => l.includes("profil est incomplet") || l.includes("poids manquant")), "Must yield appropriate limitation flags for incomplete profile");
+console.log("✅ Garmin-free neutral scoring and profile-less energy balance limits validated");
+
 console.log("=== All Tests Passed ===");
 

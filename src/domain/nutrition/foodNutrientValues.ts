@@ -14,7 +14,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 1.5, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_measured", confidence: 50, unit: "mcg" },
-    { nutrientId: "vit_b12", valuePer100g: 0.3, unit: "mcg", isMissing: false, confidence: 90, source: "Ciqual 2020" }
+    { nutrientId: "vit_b12", valuePer100g: 0.3, unit: "mcg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
+    { nutrientId: "water_food", valuePer100g: 65, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 2. Pâtes sèches standards (crues) (pates_crues)
@@ -30,7 +31,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 1.0, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 10, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 3. Pâtes cuites à l'eau (sans sel) (pates_cuites)
@@ -46,7 +48,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.3, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 70, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 4. Riz blanc cru (riz_cru)
@@ -62,7 +65,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 1.0, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 12, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 5. Riz blanc cuit (riz_cuit)
@@ -78,7 +82,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.4, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 68, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 6. Banane fraîche (banane)
@@ -94,7 +99,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.15, unit: "mg", isMissing: false, confidence: 100, source: "USDA FDC" },
     { nutrientId: "vit_c", valuePer100g: 8.7, unit: "mg", isMissing: false, confidence: 100, source: "USDA FDC" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 75, unit: "g", isMissing: false, confidence: 100, source: "USDA FDC" }
   ],
 
   // 7. Huile d'olive extra vierge (huile_olive)
@@ -110,7 +116,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.05, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 0.1, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 8. Œuf de poule (cuit) (oeuf_entier)
@@ -126,7 +133,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 1.1, unit: "mg", isMissing: false, confidence: 95, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", valuePer100g: 2.0, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" },
-    { nutrientId: "vit_b12", valuePer100g: 1.1, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" }
+    { nutrientId: "vit_b12", valuePer100g: 1.1, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" },
+    { nutrientId: "water_food", valuePer100g: 75, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 9. Flocons d'avoine brute (flocons_avoine)
@@ -142,7 +150,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 4.0, unit: "mg", isMissing: false, confidence: 100, source: "USDA FDC" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 8, unit: "g", isMissing: false, confidence: 100, source: "USDA FDC" }
   ],
 
   // 10. Pavé de saumon cuit au four (saumon)
@@ -158,7 +167,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.4, unit: "mg", isMissing: false, confidence: 90, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", valuePer100g: 11.0, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" },
-    { nutrientId: "vit_b12", valuePer100g: 3.2, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" }
+    { nutrientId: "vit_b12", valuePer100g: 3.2, unit: "mcg", isMissing: false, confidence: 95, source: "Ciqual 2020" },
+    { nutrientId: "water_food", valuePer100g: 62, unit: "g", isMissing: false, confidence: 95, source: "Ciqual 2020" }
   ],
 
   // 11. Isolat de protéine de lactosérum (whey_isolate)
@@ -174,7 +184,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", isMissing: true, missingReason: "not_measured", confidence: 50, unit: "mg" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_measured", confidence: 50, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_measured", confidence: 50, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 4, unit: "g", isMissing: false, confidence: 90, source: "User input" }
   ],
 
   // 12. Pomme crue avec peau (pomme)
@@ -190,7 +201,8 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 0.04, unit: "mg", isMissing: false, confidence: 100, source: "Ciqual 2020" },
     { nutrientId: "vit_c", valuePer100g: 4.6, unit: "mg", isMissing: false, confidence: 100, source: "Ciqual 2020" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 85, unit: "g", isMissing: false, confidence: 100, source: "Ciqual 2020" }
   ],
 
   // 13. Amandes douces emondées (amandes)
@@ -206,6 +218,7 @@ export const foodNutrientDatabase: Record<string, FoodNutrientValue[]> = {
     { nutrientId: "zinc", valuePer100g: 3.1, unit: "mg", isMissing: false, confidence: 100, source: "Ciqual 2020" },
     { nutrientId: "vit_c", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mg" },
     { nutrientId: "vit_d", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
-    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" }
+    { nutrientId: "vit_b12", isMissing: true, missingReason: "not_applicable", confidence: 100, unit: "mcg" },
+    { nutrientId: "water_food", valuePer100g: 5, unit: "g", isMissing: false, confidence: 100, source: "Ciqual 2020" }
   ]
 };

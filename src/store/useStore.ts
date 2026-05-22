@@ -63,7 +63,17 @@ const initialProfile: UserProfile = {
   general: { name: 'Athlète Elite', age: 28, gender: 'female', height: 175, weight: 65, activityLevel: 'athlete', primaryGoal: 'Performance' },
   health: { conditions: [], allergies: [], injuries: [], medications: [] },
   sport: { primarySport: 'Triathlon', trainingFrequency: 6, weeklyVolume: 12, intensity: 'variable' },
-  preferences: { units: 'metric', enableMenstrualTracking: true, notificationsEnabled: true, dataSharingConsent: true }
+  preferences: { units: 'metric', enableMenstrualTracking: true, notificationsEnabled: true, dataSharingConsent: true },
+  nutritionGoal: {
+    calories: { value: 2400, isUserDefined: false },
+    proteinGPerKg: { value: 1.8, isUserDefined: false },
+    carbsGPerKg: { value: 4.0, isUserDefined: false },
+    fat: { value: 75, isUserDefined: false },
+    fiber: { value: 30, isUserDefined: false },
+    hydration: { value: 2500, isUserDefined: false },
+    sodium: { value: 2300, isUserDefined: false },
+    objective: "performance"
+  }
 };
 
 const initialConnections: Record<DataSource, ConnectionState> = {

@@ -340,9 +340,74 @@ export function Connections() {
               <Shield size={18} className="text-primary" />
               Sécurité, Contrôle RGPD & Privauté Globale
             </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-6">
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               Les journaux sensibles tels que nutrition, douleurs, cycle, humeur, RPE et contexte restent stockés localement en V1. Les métriques passives Garmin, activités, logs d’import et profil général peuvent être synchronisés si Firebase est activé. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
             </p>
+
+            <div className="overflow-x-auto my-6 border rounded-xl">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-secondary/40 border-b">
+                    <th className="p-2.5 font-bold">Donnée</th>
+                    <th className="p-2.5 font-bold text-center">Local</th>
+                    <th className="p-2.5 font-bold text-center">Firestore (Cloud)</th>
+                    <th className="p-2.5 font-bold text-center">Export</th>
+                    <th className="p-2.5 font-bold text-center">Suppression locale</th>
+                    <th className="p-2.5 font-bold text-center">Suppression distante</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Profil</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-indigo-400 font-medium font-mono text-[10px]">possible</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-amber-500 text-[10px] font-mono">à implémenter</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Métriques Garmin</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-indigo-400 font-medium font-mono text-[10px]">possible</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-amber-500 text-[10px] font-mono">à implémenter</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Activités</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-indigo-400 font-medium font-mono text-[10px]">possible</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-amber-500 text-[10px] font-mono">à implémenter</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Nutrition</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground font-mono text-[10px]">non V1</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground text-[10px] font-mono">n/a</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Douleurs</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground font-mono text-[10px]">non V1</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground text-[10px] font-mono">n/a</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2.5 font-semibold text-foreground">Humeur & Contexte</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground font-mono text-[10px]">non V1</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-emerald-500 font-medium">oui</td>
+                    <td className="p-2.5 text-center text-muted-foreground text-[10px] font-mono">n/a</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3 flex flex-col justify-between">
@@ -363,9 +428,9 @@ export function Connections() {
               </div>
 
               <div className="space-y-4 border-t md:border-t-0 md:border-l border-border/60 pt-4 md:pt-0 md:pl-6">
-                <h4 className="font-bold text-xs uppercase text-red-500 tracking-wider">Droit à l'effacement définitif (Droit à l'oubli)</h4>
+                <h4 className="font-bold text-xs uppercase text-red-500 tracking-wider">Suppression locale des données</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Détruisez instantanément pour toujours les catégories d'historique choisies. Cette commande s'exécute directement sur votre stockage local s'en aucune trace résiduelle.
+                  Détruisez instantanément les données stockées dans votre navigateur local. Remarque : les données éventuellement synchronisées dans le cloud nécessitent une suppression distante dédiée s'il y a lieu.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button 

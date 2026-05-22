@@ -125,7 +125,7 @@ export function Settings() {
 
         <TabsContent value="privacy" className="space-y-6">
           <div className="bento-card bg-white border-destructive/20">
-            <h3 className="text-lg font-semibold mb-4 text-destructive">Zone de Danger</h3>
+            <h3 className="text-lg font-semibold mb-4 text-destructive">Zone critique</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Vos données de santé sont sensibles. Vous avez le contrôle total sur leur conservation.
             </p>

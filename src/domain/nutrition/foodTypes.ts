@@ -224,6 +224,27 @@ export interface NutritionAnalysisResult {
   energyAvailability: number | null;
   confidence: number;
   limitations: string[];
+  targets?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    hydration: number;
+    sodium: number;
+    objective: string;
+  };
+}
+
+export interface NutritionGoal {
+  calories: { value: number; isUserDefined: boolean };
+  proteinGPerKg: { value: number; isUserDefined: boolean };
+  carbsGPerKg: { value: number; isUserDefined: boolean };
+  fat: { value: number; isUserDefined: boolean };
+  fiber: { value: number; isUserDefined: boolean };
+  hydration: { value: number; isUserDefined: boolean };
+  sodium: { value: number; isUserDefined: boolean };
+  objective: "maintenance" | "performance" | "recovery" | "recomposition" | "other";
 }
 
 

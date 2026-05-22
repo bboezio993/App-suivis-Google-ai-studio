@@ -35,6 +35,20 @@ export function analyzeNutritionDay(state: AppState, dateStr: string): Nutrition
   const age = state.userProfile?.general?.age || null;
   const gender = state.userProfile?.general?.gender || null;
 
+  // Setup dynamic targets from userProfile goal
+  const goal = state.userProfile?.nutritionGoal;
+  const objective = goal?.objective ?? "performance";
+  const targetCalories = goal?.calories?.value ?? (weightKg ? Math.round(weightKg * 35) : 2400);
+  const targetProteinGPerKg = goal?.proteinGPerKg?.value ?? 1.8;
+  const targetCarbsGPerKg = goal?.carbsGPerKg?.value ?? 4.0;
+  
+  const targetProtein = weightKg ? Math.round(weightKg * targetProteinGPerKg) : 110;
+  const targetCarbs = weightKg ? Math.round(weightKg * targetCarbsGPerKg) : 260;
+  const targetFat = goal?.fat?.value ?? 75;
+  const targetFiber = goal?.fiber?.value ?? 30;
+  const targetHydration = goal?.hydration?.value ?? 2500;
+  const targetSodium = goal?.sodium?.value ?? 2300;
+
   // Calcul BMR
   let bmr: number | null = null;
   if (weightKg && heightCm && age && gender) {
@@ -240,7 +254,17 @@ export function analyzeNutritionDay(state: AppState, dateStr: string): Nutrition
     },
     energyAvailability,
     confidence: finalConfidence,
-    limitations
+    limitations,
+    targets: {
+      calories: targetCalories,
+      protein: targetProtein,
+      carbs: targetCarbs,
+      fat: targetFat,
+      fiber: targetFiber,
+      hydration: targetHydration,
+      sodium: targetSodium,
+      objective
+    }
   };
 }
 
@@ -261,9 +285,12 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   let score = 50;
 
   if (analysis.energyIntakeKcal > 0) {
-    // Pro score mapping
-    const proRatio = analysis.proteinGPerKg ? Math.min(2, analysis.proteinGPerKg / 1.6) : 1;
-    const carbsRatio = analysis.carbsGPerKg ? Math.min(2, analysis.carbsGPerKg / 4.0) : 1;
+    // Pro score mapping using dynamic targets
+    const targetProteinGPerKg = state.userProfile?.nutritionGoal?.proteinGPerKg?.value ?? 1.8;
+    const targetCarbsGPerKg = state.userProfile?.nutritionGoal?.carbsGPerKg?.value ?? 4.0;
+
+    const proRatio = analysis.proteinGPerKg ? Math.min(2, analysis.proteinGPerKg / targetProteinGPerKg) : 1;
+    const carbsRatio = analysis.carbsGPerKg ? Math.min(2, analysis.carbsGPerKg / targetCarbsGPerKg) : 1;
     const eaFactor = analysis.energyAvailability !== null 
       ? (analysis.energyAvailability >= 30 ? 20 : 5) 
       : 15;
@@ -277,7 +304,7 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
         label: "Apport Protéique",
         impact: "positive",
         value: `${analysis.proteinTotalG}g`,
-        note: analysis.proteinGPerKg ? `Ratio : ${analysis.proteinGPerKg} g/kg (cible: 1.6 g/kg).` : "Total protéique absorbé"
+        note: analysis.proteinGPerKg ? `Ratio : ${analysis.proteinGPerKg} g/kg (cible: ${targetProteinGPerKg} g/kg).` : "Total protéique absorbé"
       });
     } else {
       negativeDrivers.push({
@@ -285,7 +312,7 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
         label: "Apport Protéique bas",
         impact: "negative",
         value: `${analysis.proteinTotalG}g`,
-        note: analysis.proteinGPerKg ? `Ratio insuffisant : ${analysis.proteinGPerKg} g/kg.` : "Total protéique"
+        note: analysis.proteinGPerKg ? `Ratio insuffisant : ${analysis.proteinGPerKg} g/kg (cible: ${targetProteinGPerKg} g/kg).` : "Total protéique"
       });
     }
 

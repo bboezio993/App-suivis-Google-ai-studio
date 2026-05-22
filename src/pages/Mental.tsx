@@ -46,8 +46,8 @@ export function Mental() {
           </h3>
           <p className="text-sm text-[#86868B] mb-4">
             La littérature scientifique montre que le ressenti subjectif
-            (humeur, stress perçu) est souvent un indicateur plus précoce du
-            surentraînement que les biomarqueurs objectifs.
+            (humeur, stress perçu) est souvent un indicateur plus précoce de
+            la fatigue accumulée que les biomarqueurs objectifs.
           </p>
           <div className="flex items-start gap-3 p-4 bg-[#F2F2F7] rounded-xl">
             <AlertCircle size={16} className="text-[#AF52DE] shrink-0 mt-0.5" />

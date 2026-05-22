@@ -8,10 +8,11 @@ export function buildNutritionDaySummary(mealLogs: MealLog[], dateStr: string, m
   const dayLogs = mealLogs.filter(l => l.date === dateStr);
   const dayMetrics = metrics.filter(m => m.timestamp && m.timestamp.startsWith(dateStr));
   
-  const hydrationMetric = dayMetrics.find(m => m.type === "hydration_volume");
+  const hydrationMetrics = dayMetrics.filter(m => m.type === "hydration_volume");
+  const totalHydration = hydrationMetrics.reduce((sum, m) => sum + (m.value || 0), 0);
   
   let calories = 0, protein = 0, carbs = 0, fat = 0;
-  let water = hydrationMetric ? hydrationMetric.value : 0;
+  let water = totalHydration;
   
   let totalFiber = 0;
   let totalSugars = 0;

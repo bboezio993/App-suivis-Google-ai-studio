@@ -17,7 +17,10 @@ import {
   Dumbbell,
   CheckCircle2,
   AlertTriangle,
-  Lightbulb
+  Lightbulb,
+  Heart,
+  Sliders,
+  RotateCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +38,54 @@ export function Nutrition() {
   const todayMeals = storeState.mealLogs.filter(log => log.date === todayStr);
   const weightKg = storeState.userProfile?.general?.weight;
 
-  // Macro targets (only shown if weight profile is available)
-  const targetProtein = weightKg ? Math.round(weightKg * 1.6) : null;
-  const targetCarbs = weightKg ? Math.round(weightKg * 4.0) : null;
-  const targetFat = weightKg ? Math.round(weightKg * 1.0) : null;
-  const targetWaterHtml = 2500; // 2.5L standard target
+  // Macro targets (derived dynamically from analysis targets)
+  const targetCalories = analysis.targets?.calories ?? 2400;
+  const targetProtein = analysis.targets?.protein ?? (weightKg ? Math.round(weightKg * 1.8) : 110);
+  const targetCarbs = analysis.targets?.carbs ?? (weightKg ? Math.round(weightKg * 4.0) : 260);
+  const targetFat = analysis.targets?.fat ?? 75;
+  const targetWaterHtml = analysis.targets?.hydration ?? 2500;
+  const targetFiber = analysis.targets?.fiber ?? 30;
+  const targetSodium = analysis.targets?.sodium ?? 2300;
+  const currentObjective = analysis.targets?.objective ?? "performance";
+
+  // Goal customization state and functions
+  const userGoal = storeState.userProfile?.nutritionGoal || {
+    calories: { value: 2400, isUserDefined: false },
+    proteinGPerKg: { value: 1.8, isUserDefined: false },
+    carbsGPerKg: { value: 4.0, isUserDefined: false },
+    fat: { value: 75, isUserDefined: false },
+    fiber: { value: 30, isUserDefined: false },
+    hydration: { value: 2500, isUserDefined: false },
+    sodium: { value: 2300, isUserDefined: false },
+    objective: "performance"
+  };
+
+  const handleUpdateGoalField = (field: string, val: any) => {
+    const updatedGoal = {
+      ...userGoal,
+      [field]: field === "objective" ? val : { value: Number(val), isUserDefined: true }
+    };
+    storeState.updateUserProfile({
+      nutritionGoal: updatedGoal
+    });
+  };
+
+  const handleResetGoals = () => {
+    const w = weightKg || 65;
+    const defaultGoal = {
+      calories: { value: Math.round(w * 35), isUserDefined: false },
+      proteinGPerKg: { value: 1.8, isUserDefined: false },
+      carbsGPerKg: { value: 4.0, isUserDefined: false },
+      fat: { value: Math.round(w * 1.1), isUserDefined: false },
+      fiber: { value: 30, isUserDefined: false },
+      hydration: { value: 2500, isUserDefined: false },
+      sodium: { value: 2300, isUserDefined: false },
+      objective: "performance" as const
+    };
+    storeState.updateUserProfile({
+      nutritionGoal: defaultGoal
+    });
+  };
 
   const handleAddWater = () => {
     addMetric({
@@ -55,7 +101,7 @@ export function Nutrition() {
 
   // List of micronutrients for P6 block
   const trackingMicros = [
-    { id: "sodium", name: "Sodium", normalMin: 1500, normalMax: 2300, unit: "mg" },
+    { id: "sodium", name: "Sodium", normalMin: targetSodium, normalMax: 2300, unit: "mg" },
     { id: "potassium", name: "Potassium", normalMin: 3500, normalMax: 4700, unit: "mg" },
     { id: "calcium", name: "Calcium", normalMin: 1000, normalMax: 1200, unit: "mg" },
     { id: "magnesium", name: "Magnésium", normalMin: 400, normalMax: 420, unit: "mg" },
@@ -73,7 +119,7 @@ export function Nutrition() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Nutrition & Métabolisme</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Adaptez vos apports réels aux dépenses physiques estimées sans fallbacks biométriques arbitraires.
+            Adaptez vos apports réels aux dépenses physiques réelles sans fallbacks biométriques arbitraires.
           </p>
         </div>
         <div className="flex gap-2">
@@ -86,35 +132,36 @@ export function Nutrition() {
         </div>
       </div>
 
-      {/* Main dashboard macro widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Calories Ring & Balance */}
-        <div className="bento-card p-6 border border-border/60">
+      {/* Main dashboard macro widgets - Fluid Grid-5 columns list */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        
+        {/* Card 1: Calories & Balance */}
+        <div className="bento-card p-5 border border-border/60 flex flex-col justify-between h-44">
           <div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Balance Énergétique</span>
             {analysis.energyBalance !== null ? (
-              <span className={`text-3xl font-black font-mono block mt-1 ${analysis.energyBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+              <span className={`text-2xl font-black font-mono block mt-1 ${analysis.energyBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
                 {analysis.energyBalance > 0 ? '+' : ''}{analysis.energyBalance} <span className="text-xs font-normal text-muted-foreground">kcal</span>
               </span>
             ) : (
-              <span className="text-sm font-semibold flex items-center gap-1.5 text-muted-foreground mt-2">
-                <AlertCircle size={15} className="text-orange-400" /> Profil incomplet pour balance
+              <span className="text-xs font-semibold flex items-center gap-1 text-muted-foreground mt-2">
+                <AlertCircle size={14} className="text-orange-400 shrink-0" /> Profil incomplet
               </span>
             )}
           </div>
-          <div className="space-y-1.5 mt-4">
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-              <span>Apports consommés :</span>
-              <span className="text-emerald-500 font-bold">+{summary.totalCalories} kcal</span>
+          <div className="space-y-1 mt-2 text-[11px] font-medium text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Consommé :</span>
+              <span className="text-emerald-500 font-bold">+{summary.totalCalories} / {targetCalories}</span>
             </div>
             {analysis.estimatedExpenditureKcal !== null ? (
-              <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-                <span>Dépense estimée :</span>
+              <div className="flex justify-between">
+                <span>Dépense (BMR+Act.) :</span>
                 <span className="text-red-400 font-bold">-{analysis.estimatedExpenditureKcal} kcal</span>
               </div>
             ) : (
-              <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-                <span>Dépense active Garmin :</span>
+              <div className="flex justify-between">
+                <span>Active Garmin :</span>
                 <span className="text-red-400 font-bold">
                   -{storeState.garminActivities
                     .filter(a => a.date && a.date.startsWith(todayStr))
@@ -125,74 +172,121 @@ export function Nutrition() {
           </div>
         </div>
 
-        {/* Protein bar */}
-        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+        {/* Card 2: Proteins */}
+        <div className="bento-card p-5 flex flex-col justify-between h-44 border border-border/60">
           <div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Protéines</span>
-            <span className="text-3xl font-black font-mono block mt-1 text-indigo-400">
-              {summary.totalProtein}g <span className="text-xs font-normal text-muted-foreground">/ {targetProtein ? `${targetProtein}g` : 'Profil ?'}</span>
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Protéines</span>
+              {userGoal.proteinGPerKg.isUserDefined && (
+                <Badge className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[8px] py-0 px-1">Manuel</Badge>
+              )}
+            </div>
+            <span className="text-2xl font-black font-mono block mt-1 text-indigo-400">
+              {summary.totalProtein}g <span className="text-xs font-normal text-muted-foreground">/ {targetProtein}g</span>
             </span>
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-              <span>Optimisation musculaire :</span>
-              <span>{targetProtein ? `${Math.round(Math.min(100, (summary.totalProtein / targetProtein) * 100))}%` : 'Incomp.'}</span>
+            <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+              <span>Ratio : {analysis.proteinGPerKg !== null ? `${analysis.proteinGPerKg} g/kg` : "—"}</span>
+              <span>{Math.round(Math.min(100, (summary.totalProtein / targetProtein) * 100))}%</span>
             </div>
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-indigo-500 rounded-full transition-all" 
-                style={{ width: `${targetProtein ? Math.min(100, (summary.totalProtein / targetProtein) * 100) : 0}%` }} 
+                style={{ width: `${Math.min(100, (summary.totalProtein / targetProtein) * 100)}%` }} 
               />
             </div>
           </div>
         </div>
 
-        {/* Carbohydrates bar */}
-        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+        {/* Card 3: Carbohydrates */}
+        <div className="bento-card p-5 flex flex-col justify-between h-44 border border-border/60">
           <div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Glucides (Glycogène)</span>
-            <span className="text-3xl font-black font-mono block mt-1 text-amber-500">
-              {summary.totalCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs ? `${targetCarbs}g` : 'Profil ?'}</span>
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Glucides</span>
+              {userGoal.carbsGPerKg.isUserDefined && (
+                <Badge className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[8px] py-0 px-1">Manuel</Badge>
+              )}
+            </div>
+            <span className="text-2xl font-black font-mono block mt-1 text-amber-500">
+              {summary.totalCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs}g</span>
             </span>
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-              <span>Restauration des stocks :</span>
-              <span>{targetCarbs ? `${Math.round(Math.min(100, (summary.totalCarbs / targetCarbs) * 100))}%` : 'Incomp.'}</span>
+            <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+              <span>Ratio : {analysis.carbsGPerKg !== null ? `${analysis.carbsGPerKg} g/kg` : "—"}</span>
+              <span>{Math.round(Math.min(100, (summary.totalCarbs / targetCarbs) * 100))}%</span>
             </div>
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-amber-500 rounded-full transition-all" 
-                style={{ width: `${targetCarbs ? Math.min(100, (summary.totalCarbs / targetCarbs) * 100) : 0}%` }} 
+                style={{ width: `${Math.min(100, (summary.totalCarbs / targetCarbs) * 100)}%` }} 
               />
             </div>
           </div>
         </div>
 
-        {/* Liquid Hydration tracker card */}
-        <div className="bento-card p-6 flex flex-col justify-between h-48 border border-border/60">
+        {/* Card 4: Energy Availability (EA) - B3 Requirement */}
+        <div className="bento-card p-5 flex flex-col justify-between h-44 border border-border/60">
+          <div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Disponibilité Énergétique (EA)</span>
+            <span className="text-2xl font-black font-mono block mt-1 text-rose-400">
+              {analysis.energyAvailability !== null ? (
+                `${Math.round(analysis.energyAvailability)} kcal`
+              ) : (
+                "N/A"
+              )}
+            </span>
+          </div>
+          <div className="space-y-1">
+            {analysis.energyAvailability !== null ? (
+              <>
+                <div className="flex justify-between text-[10px] font-medium text-muted-foreground leading-tight">
+                  <span>Masse Maigre</span>
+                  <span className={analysis.energyAvailability >= 45 ? "text-emerald-400" : analysis.energyAvailability >= 30 ? "text-amber-400" : "text-rose-400"}>
+                    {analysis.energyAvailability >= 45 ? "Optimal" : analysis.energyAvailability >= 30 ? "Adéquat" : "Vigilance LEA"}
+                  </span>
+                </div>
+                <p className="text-[9px] text-muted-foreground leading-tight">
+                  {analysis.energyAvailability < 30 
+                    ? "Peut suggérer des apports limités pour soutenir l'effort et la santé." 
+                    : "Soutien physiologique adéquat des fonctions systémiques."}
+                </p>
+              </>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-[9px] text-muted-foreground leading-tight">
+                  Données de % de gras ou de pesées insuffisantes pour évaluer la disponibilité active.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Card 5: Liquid Hydration tracker card */}
+        <div className="bento-card p-5 flex flex-col justify-between h-44 border border-border/60">
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Hydratation</span>
-              <span className="text-3xl font-black font-mono block mt-1 text-sky-400">
+              <span className="text-2xl font-black font-mono block mt-1 text-sky-400">
                 {(summary.totalHydrationMl / 1000).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">/ {(targetWaterHtml / 1000).toFixed(1)} L</span>
               </span>
             </div>
             <Button 
               onClick={handleAddWater}
               size="sm" 
-              className="w-8 h-8 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center p-0 shrink-0"
+              className="w-7 h-7 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center p-0 shrink-0"
               id="btn-add-water-fast"
             >
-              <Plus size={15} />
+              <Plus size={14} />
             </Button>
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+            <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
               <span>Saisie hydrique :</span>
               <span>{Math.min(100, Math.round((summary.totalHydrationMl / targetWaterHtml) * 100))}%</span>
             </div>
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-sky-400 rounded-full transition-all" 
                 style={{ width: `${Math.min(100, (summary.totalHydrationMl / targetWaterHtml) * 100)}%` }} 
@@ -202,7 +296,7 @@ export function Nutrition() {
         </div>
       </div>
 
-      {/* Main split */}
+      {/* Main split layout spacing */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Logger is the primary module */}
@@ -283,17 +377,149 @@ export function Nutrition() {
         {/* Sidebar right */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* Saisie complétude & diagnostics limits summary */}
+          {/* Goals Editor Box (Fulfills P1-5) */}
+          <div className="bento-card p-5 border border-border border-l-4 border-l-emerald-500 space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-bold text-sm flex items-center gap-1.5">
+                <Sliders size={16} className="text-emerald-500" />
+                Objectifs Métabolisme & Cibles
+              </h4>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleResetGoals}
+                className="h-7 text-[10px] px-2 flex gap-1 items-center hover:bg-emerald-500/10 hover:text-emerald-400"
+              >
+                <RotateCcw size={10} /> Recalculer
+              </Button>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Personnalisez librement vos cibles nutritionnelles sans contraintes algorithmiques de régimes restrictifs.
+            </p>
+
+            <div className="space-y-3 pt-1">
+              {/* Objective */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase block">Objectif global</label>
+                <select 
+                  value={currentObjective}
+                  onChange={(e) => handleUpdateGoalField("objective", e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="maintenance">Maintenance métabolique</option>
+                  <option value="performance">Soutien de Performance athlétique</option>
+                  <option value="recovery">Récupération systémique active</option>
+                  <option value="recomposition">Recomposition corporelle prudente</option>
+                  <option value="other">Autre / Équilibre</option>
+                </select>
+              </div>
+
+              {/* Calories input */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-baseline">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">Calories (kcal)</label>
+                  <Badge className={`text-[8px] border-none py-0 px-1 font-mono ${userGoal.calories.isUserDefined ? "bg-emerald-500/10 text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
+                    {userGoal.calories.isUserDefined ? "Manuel" : "Estimé"}
+                  </Badge>
+                </div>
+                <input 
+                  type="number" 
+                  value={userGoal.calories.value}
+                  onChange={(e) => handleUpdateGoalField("calories", e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-mono"
+                />
+              </div>
+
+              {/* Protein and Carbs dual input */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-baseline">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase block">Protéines (g/kg)</label>
+                  </div>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={userGoal.proteinGPerKg.value}
+                    onChange={(e) => handleUpdateGoalField("proteinGPerKg", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-baseline">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase block">Glucides (g/kg)</label>
+                  </div>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={userGoal.carbsGPerKg.value}
+                    onChange={(e) => handleUpdateGoalField("carbsGPerKg", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Fat, Fiber and Hydration inputs (g and ml) */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">Lipides (g)</label>
+                  <input 
+                    type="number" 
+                    value={userGoal.fat.value}
+                    onChange={(e) => handleUpdateGoalField("fat", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-1.5 py-1 text-xs font-mono text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">Fibres (g)</label>
+                  <input 
+                    type="number" 
+                    value={userGoal.fiber.value}
+                    onChange={(e) => handleUpdateGoalField("fiber", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-1.5 py-1 text-xs font-mono text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">Hydr. (ml)</label>
+                  <input 
+                    type="number" 
+                    value={userGoal.hydration.value}
+                    onChange={(e) => handleUpdateGoalField("hydration", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-1.5 py-1 text-xs font-mono text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Sodium input */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-baseline">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">Sodium cible (mg)</label>
+                  <Badge className={`text-[8px] border-none py-0 px-1 font-mono ${userGoal.sodium.isUserDefined ? "bg-emerald-500/10 text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
+                    {userGoal.sodium.isUserDefined ? "Manuel" : "Estimé"}
+                  </Badge>
+                </div>
+                <input 
+                  type="number" 
+                  value={userGoal.sodium.value}
+                  onChange={(e) => handleUpdateGoalField("sodium", e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-mono"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* B1 Block - Diagnostic de complétude des données & limitations summary */}
           <div className="bento-card p-6 border border-border border-l-4 border-l-amber-500">
             <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
               <ShieldAlert size={16} className="text-amber-500" />
-              Signaux de Saisie & Limites Actives
+              Diagnostic de Complétude des Données
             </h4>
             
             {analysis.limitations.length === 0 ? (
               <div className="py-4 text-xs text-muted-foreground flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-emerald-500" />
-                Aucun signal de faiblesse de saisie détecté pour aujourd’hui.
+                Saisie complète et conforme détectée pour aujourd’hui.
               </div>
             ) : (
               <div className="space-y-2">
@@ -319,11 +545,11 @@ export function Nutrition() {
             </div>
           </div>
 
-          {/* P5 - Around the training peri-workout block */}
+          {/* B5 - Timing péri-effort (autour des séances Garmin) */}
           <div className="bento-card p-6 border border-border border-l-4 border-l-indigo-500">
             <h4 className="font-bold text-sm mb-2.5 flex items-center gap-1.5">
               <Dumbbell size={16} className="text-indigo-400" />
-              Ravitaillement & Timing d'Effort
+              Timing Ravitaillement Péri-Effort
             </h4>
             
             <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
