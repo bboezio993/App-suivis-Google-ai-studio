@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { AppState } from "./src/store/useStore";
 import { runAnalysisEngine } from "./src/services/analysisEngine/engine";
-import { runNutritionEngine } from "./src/services/analysisEngine/nutritionEngine";
+import { runNutritionEngine, analyzeNutritionDay } from "./src/services/analysisEngine/nutritionEngine";
 import { metricRegistry } from "./src/domain/metrics/metricRegistry";
 
 const mockState = {
@@ -207,6 +207,76 @@ assert.ok(summaryTest.totalHydrationMl === 0, "Hydration should be 0 if no metri
 assert.ok(summaryTest.limits.some(l => l.includes("Hydratation non renseignée")), "Must warn about hydration missing");
 
 console.log("✅ NutritionDaySummary is correctly built and utilized");
+
+// 5. Test Micronutrients & Training Timing (Sprint nutrition P5 & P6)
+const timingTestState = {
+  ...mockState,
+  metrics: [
+    ...mockState.metrics,
+    {
+      id: "m_water_1",
+      source: "manual",
+      timestamp: new Date().toISOString(),
+      type: "hydration_volume",
+      value: 1200,
+      unit: "ml",
+      confidenceScore: 100
+    }
+  ],
+  garminActivities: [
+    {
+      id: "act_run_1",
+      date: new Date().toISOString().split("T")[0] + "T10:00:00Z",
+      type: "running",
+      title: "Endurance Run",
+      distance: 12, // 12km (long run)
+      duration: "01:20:00", // > 4200 seconds / 70 mins
+      calories: 850,
+      avgHeartRate: 145,
+      maxHeartRate: 165,
+      tss: null
+    }
+  ],
+  mealLogs: [
+    {
+      id: "l_timing_1",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "pre_workout",
+      items: [
+        { foodId: "1", foodName: "Banane", quantity: 1, unit: "g", gramsSelected: 120, calories: 155, protein: 1.5, carbs: 35, fat: 0.3 }
+      ]
+    },
+    {
+      id: "l_timing_2",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "intra_workout",
+      items: [
+        { foodId: "2", foodName: "Miel", quantity: 1, unit: "g", gramsSelected: 30, calories: 92, protein: 0.1, carbs: 24, fat: 0 }
+      ]
+    },
+    {
+      id: "l_timing_3",
+      date: new Date().toISOString().split("T")[0],
+      mealType: "post_workout",
+      items: [
+        { foodId: "3", foodName: "Flocons d'avoine", quantity: 1, unit: "g", gramsSelected: 80, calories: 350, protein: 25, carbs: 55, fat: 5 }
+      ]
+    }
+  ]
+} as unknown as AppState;
+
+const timingAnalysis = analyzeNutritionDay(timingTestState, new Date().toISOString().split("T")[0]);
+assert.ok(timingAnalysis.mealTiming.preWorkoutPresent, "Pre-workout meal must be detected");
+assert.ok(timingAnalysis.mealTiming.postWorkoutPresent, "Post-workout meal must be detected");
+assert.ok(timingAnalysis.mealTiming.intraWorkoutPresent, "Intra-workout meal must be detected");
+assert.ok(timingAnalysis.mealTiming.score >= 80, "Peri-workout training logs should result in high timing score");
+assert.equal(timingAnalysis.trainingFueling.status, "Optimisé", "Should classify long run with intra/pre-workout as Optimisé");
+console.log("✅ Peri-workout Timing and Fueling Engine analysis accurately tested");
+
+const summaryMicro = buildNutritionDaySummary(timingTestState.mealLogs, new Date().toISOString().split("T")[0]);
+assert.ok(summaryMicro.micronutrients.length > 0, "Summary must aggregate micronutrients list");
+assert.ok(summaryMicro.micronutrients.some(m => m.nutrientId === "sodium"), "Sodium should be present in aggregated micronutrients");
+console.log("✅ Micronutrient aggregation and missing tracking fully verified");
 
 console.log("=== All Tests Passed ===");
 

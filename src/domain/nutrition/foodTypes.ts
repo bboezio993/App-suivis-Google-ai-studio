@@ -1,7 +1,7 @@
 export interface NutrientDefinition {
   id: string;
   name: string;
-  unit: "g" | "mg" | "mcg" | "kcal" | "IU";
+  unit: "g" | "mg" | "mcg" | "kcal" | "IU" | string;
   category: "macro" | "micro_mineral" | "micro_vitamin" | "other";
 }
 
@@ -184,4 +184,46 @@ export interface CookingYieldFactor {
   confidence: number;
   note: string;
 }
+
+export interface MealTimingAnalysis {
+  score: number;
+  notes: string[];
+  preWorkoutPresent: boolean;
+  postWorkoutPresent: boolean;
+  intraWorkoutPresent: boolean;
+  hasSufficientCarbsBeforeLongRun: boolean;
+  hasSufficientProteinPostWorkout: boolean;
+}
+
+export interface MicronutrientCoverageValue {
+  value: number;
+  unit: string;
+  ratio?: number;
+  status: "met" | "deficient" | "unmeasured";
+}
+
+export interface NutritionAnalysisResult {
+  date: string;
+  energyIntakeKcal: number;
+  estimatedExpenditureKcal: number | null;
+  energyBalance: number | null;
+  proteinTotalG: number;
+  proteinGPerKg: number | null;
+  carbsTotalG: number;
+  carbsGPerKg: number | null;
+  fatTotalG: number;
+  fiberG: number;
+  hydrationMl: number;
+  micronutrientCoverage: Record<string, MicronutrientCoverageValue>;
+  mealTiming: MealTimingAnalysis;
+  trainingFueling: {
+    score: number;
+    status: string;
+    notes: string[];
+  };
+  energyAvailability: number | null;
+  confidence: number;
+  limitations: string[];
+}
+
 

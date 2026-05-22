@@ -341,7 +341,7 @@ export function Connections() {
               Sécurité, Contrôle RGPD & Privauté Globale
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-6">
-              Aura Elite garantit la pleine souveraineté de vos données personnelles, sportives et subjectives. L'intégralité de vos informations personnelles réside exclusivement dans votre stockage de navigateur local. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
+              Les journaux sensibles tels que nutrition, douleurs, cycle, humeur, RPE et contexte restent stockés localement en V1. Les métriques passives Garmin, activités, logs d’import et profil général peuvent être synchronisés si Firebase est activé. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -349,7 +349,7 @@ export function Connections() {
                 <div>
                   <h4 className="font-bold text-xs uppercase text-muted-foreground tracking-wider mb-1">Sauvegarde & Portabilité (JSON)</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Téléchargez instantanément l'intégralité de votre profil utilisateur, alimentaire, sportif et vos métriques brutes sous un format structuré JSON portable (conforme à l'article 20 du RGPD).
+                    Téléchargez instantanément l'intégralité de votre profil utilisateur, alimentaire, sportif et vos métriques brutes sous un format structuré d'export portable au format JSON.
                   </p>
                 </div>
                 <div>
