@@ -2,6 +2,17 @@ export type ReadinessScore = number; // 0-100
 
 export type DataSource = "garmin" | "manual" | "derived";
 
+export interface AllergenBypassLog {
+  id: string;
+  date: string;
+  foodId: string;
+  foodName: string;
+  allergenDetected: string;
+  mealType: string;
+  userConfirmed: boolean;
+  notes?: string;
+}
+
 export interface UserProfile {
   general: {
     name: string;
@@ -279,30 +290,7 @@ export interface GarminActivity {
   // ... other metrics can be added as needed
 }
 
-export interface MealItem {
-  foodId: string;
-  foodName: string;
-  quantity: number;
-  unit: string;
-  gramsSelected: number;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  rawCookedState?: "raw" | "cooked";
-}
-
-export interface MealLog {
-  id: string;
-  date: string; // YYYY-MM-DD
-  mealType: "breakfast" | "lunch" | "dinner" | "snack" | "pre_workout" | "intra_workout" | "post_workout";
-  items: MealItem[];
-  photoIds?: string[];
-  hungerBefore?: number; // 1-5
-  satietyAfter?: number; // 1-5
-  digestionAfter?: number; // 1-5
-  notes?: string;
-}
+export * from '../domain/nutrition/foodTypes';
 
 export interface PainLog {
   id: string;
@@ -319,19 +307,6 @@ export interface PainLog {
   notes?: string;
   evolutionTime?: string; // progressive, stable, improvement, healing
   historyEpisodes?: string; // first occurrence, recurring
-}
-
-export interface Recipe {
-  id: string;
-  name: string;
-  description?: string;
-  items: {
-    foodId: string;
-    foodName: string;
-    quantity: number;
-    unit: string;
-    gramsSelected: number;
-  }[];
 }
 
 

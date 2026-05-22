@@ -11,6 +11,7 @@ export function NutritionLogger() {
   const storeRecipes = useStore(state => state.recipes) || [];
   const addRecipeToStore = useStore(state => state.addRecipe);
   const deleteRecipeFromStore = useStore(state => state.deleteRecipe);
+  const addAllergenBypassLog = useStore(state => state.addAllergenBypassLog);
   const userProfile = useStore(state => state.userProfile);
 
   const [mealType, setMealType] = useState<MealLog['mealType']>('breakfast');
@@ -18,6 +19,7 @@ export function NutritionLogger() {
   const [selectedFoodId, setSelectedFoodId] = useState('');
   const [quantity, setQuantity] = useState(100);
   const [unit, setUnit] = useState('g');
+  const [mealItemRawCooked, setMealItemRawCooked] = useState<"raw" | "cooked">("raw");
   
   // Interactive Tab Selection
   const [activeTab, setActiveTab] = useState<'ingredients' | 'recipes'>('ingredients');
@@ -86,6 +88,19 @@ export function NutritionLogger() {
     return null;
   };
 
+  const handleBypassAllergen = (food: typeof internalFoodDatabase[0], allergen: string) => {
+    addAllergenBypassLog({
+      id: `bypass_${Date.now()}`,
+      date: new Date().toISOString(),
+      foodId: food.id,
+      foodName: food.name,
+      allergenDetected: allergen,
+      mealType,
+      userConfirmed: true
+    });
+    setBypassAllergenFoodId(food.id);
+  };
+
   const handleCreateRecipe = () => {
     if (!recipeName || items.length === 0) return;
     const newRecipe: Recipe = {
@@ -97,7 +112,10 @@ export function NutritionLogger() {
         foodName: it.foodName,
         quantity: it.quantity,
         unit: it.unit,
-        gramsSelected: it.gramsSelected
+        gramsSelected: it.gramsSelected,
+        rawCookedState: it.rawCookedState,
+        conversionConfidence: it.conversionConfidence,
+        conversionAssumptions: it.conversionAssumptions
       }))
     };
     addRecipeToStore(newRecipe);
@@ -122,6 +140,9 @@ export function NutritionLogger() {
         quantity: it.quantity,
         unit: it.unit,
         gramsSelected: it.gramsSelected,
+        rawCookedState: it.rawCookedState,
+        conversionConfidence: it.conversionConfidence,
+        conversionAssumptions: it.conversionAssumptions,
         calories,
         protein,
         carbs,
@@ -171,6 +192,9 @@ export function NutritionLogger() {
       quantity,
       unit,
       gramsSelected: grams,
+      rawCookedState: unit === 'g' ? mealItemRawCooked : undefined,
+      conversionConfidence: confidence,
+      conversionAssumptions: assumptions.join('; '),
       calories,
       protein,
       carbs,
@@ -449,9 +473,9 @@ export function NutritionLogger() {
                   <div className="flex gap-2.5 text-red-500 items-start">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
-                      <span className="text-xs font-bold font-sans">Alerte Clinique d'Allergène</span>
+                      <span className="text-xs font-bold font-sans">Attention allergène déclaré</span>
                       <p className="text-[10px] text-muted-foreground leading-normal">
-                        Cet ingrédient contient du <span className="text-red-500 font-bold">{isAllergic(selectedFood.name)}</span> répertorié dans vos allergies d'athlète. Par sécurité, l'accès est consigné.
+                        Cet ingrédient correspond à une allergie que vous avez renseignée (<span className="text-red-500 font-bold">{isAllergic(selectedFood.name)}</span>). Cette vérification repose sur les informations que vous avez renseignées et sur le nom des aliments. Elle ne remplace pas la lecture d'une étiquette ou l'avis d'un professionnel en cas d'allergie sévère.
                       </p>
                     </div>
                   </div>
@@ -466,10 +490,10 @@ export function NutritionLogger() {
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setBypassAllergenFoodId(selectedFood.id)}
+                      onClick={() => handleBypassAllergen(selectedFood, isAllergic(selectedFood.name) as string)}
                       className="bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 h-7 font-bold rounded-lg"
                     >
-                      Contourner l'alerte
+                      Confirmer malgré l'alerte
                     </Button>
                   </div>
                 </div>
@@ -503,7 +527,23 @@ export function NutritionLogger() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-1">
+                  {unit === 'g' && (
+                    <div className="pt-2 border-t border-border mt-2">
+                      <label className="text-[10px] font-bold block text-muted-foreground mb-2">État du produit pesé (Poids cru ou Poids cuit ?) :</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-1.5 text-xs">
+                          <input type="radio" value="raw" checked={mealItemRawCooked === 'raw'} onChange={() => setMealItemRawCooked('raw')} className="accent-emerald-500" />
+                          Cru (sèche)
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs">
+                          <input type="radio" value="cooked" checked={mealItemRawCooked === 'cooked'} onChange={() => setMealItemRawCooked('cooked')} className="accent-emerald-500" />
+                          Cuit (préparé)
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1 mt-2">
                     <Button 
                       onClick={handleAddItemToMeal} 
                       type="button" 

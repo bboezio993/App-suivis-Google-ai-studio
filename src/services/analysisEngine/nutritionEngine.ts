@@ -73,13 +73,23 @@ export function runNutritionEngine(state: AppState): ModularEngineResult {
   }
 
   if (hasSufficientNutritionData) {
-    confidence = isDayComplete ? 80 : 50; 
+    confidence = isDayComplete ? 70 : 40; 
     
-    const targetWeight = weightKg || 70; // used only for ratios as a fallback, not absolute basal predictions
-    const proRatio = Math.min(2, totalPro / (targetWeight * 1.6));
-    const carbsRatio = Math.min(2, totalCar / (targetWeight * 4));
-    
+    if (bmr === null) confidence -= 20;
+    if (ffm === null) confidence -= 10;
+    confidence = Math.max(10, confidence);
+
     let eaScore = 20; 
+    let proRatio = 1;
+    let carbsRatio = 1;
+    
+    if (weightKg) {
+      proRatio = Math.min(2, totalPro / (weightKg * 1.6));
+      carbsRatio = Math.min(2, totalCar / (weightKg * 4));
+    } else {
+      limits.push("Analyse des ratios macro-nutritionnels impossible (poids manquant).");
+    }
+    
     if (energyAvailability !== null) {
       eaScore = energyAvailability >= 30 ? 20 : 5;
     } else {

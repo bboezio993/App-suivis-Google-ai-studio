@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog, RejectedMetric, Recipe } from '../types';
+import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog, RejectedMetric, Recipe, AllergenBypassLog } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
 import { syncProfileToFirestore } from '../services/firebaseSync';
 import { metricRegistry } from '../domain/metrics/metricRegistry';
@@ -36,6 +36,7 @@ export interface AppState {
   contextLogs: LifeContextLog[];
   engineScores: EngineScores | null;
   recipes: Recipe[];
+  allergenBypassLogs: AllergenBypassLog[];
   addMetric: (metric: NormalizedMetric) => void;
   addMetrics: (metrics: NormalizedMetric[]) => void;
   updateConnection: (source: DataSource, status: ConnectionState['status']) => void;
@@ -50,6 +51,7 @@ export interface AppState {
   addMealLog: (log: MealLog) => void;
   addPainLog: (log: PainLog) => void;
   addContextLog: (log: LifeContextLog) => void;
+  addAllergenBypassLog: (log: AllergenBypassLog) => void;
   addRecipe: (recipe: Recipe) => void;
   deleteRecipe: (id: string) => void;
   computeEngineScores: () => void;
@@ -88,6 +90,7 @@ export const useStore = create<AppState>()(
       contextLogs: [],
       engineScores: null,
       recipes: [],
+      allergenBypassLogs: [],
       addMetric: (metric) => {
         const result = createValidatedMetric({
           source: metric.source,
@@ -255,6 +258,9 @@ export const useStore = create<AppState>()(
           return { contextLogs: [...filtered, log] };
         });
         get().computeEngineScores();
+      },
+      addAllergenBypassLog: (log) => {
+        set((state) => ({ allergenBypassLogs: [...(state.allergenBypassLogs || []), log] }));
       },
       addRecipe: (recipe) => {
         set((state) => {

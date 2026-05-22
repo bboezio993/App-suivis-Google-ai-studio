@@ -51,21 +51,29 @@ export function Nutrition() {
     .reduce((acc, a) => acc + (a.calories || 0), 0);
   
   const recentActivities = garminActivities.slice(0, 7);
-  const avgActiveCal = recentActivities.length > 0 
-    ? recentActivities.reduce((acc, a) => acc + (a.calories || 0), 0) / recentActivities.length
-    : 450;
 
-  const activeBurn = dailyActiveCalFromMetrics > 0 ? dailyActiveCalFromMetrics : (dailyActivityCalFromSessions > 0 ? dailyActivityCalFromSessions : avgActiveCal);
+  const activeBurn = dailyActiveCalFromMetrics > 0 ? dailyActiveCalFromMetrics : dailyActivityCalFromSessions;
 
-  const weightKg = userProfile?.general?.weight || 68;
-  const bmr = Math.round(10 * weightKg + 6.25 * (userProfile?.general?.height || 172) - 5 * (userProfile?.general?.age || 26) + 4);
-  const targetCalories = Math.round(bmr + activeBurn);
-  const energyBalance = dailyCalories - targetCalories;
+  const weightKg = userProfile?.general?.weight;
+  const heightCm = userProfile?.general?.height;
+  const age = userProfile?.general?.age;
+  const gender = userProfile?.general?.gender;
+
+  let bmr = 0;
+  let hasBmr = false;
+  if (weightKg && heightCm && age && gender) {
+     const s = gender === 'female' ? -161 : 5;
+     bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + s);
+     hasBmr = true;
+  }
+  
+  const targetCalories = hasBmr ? Math.round(bmr + activeBurn) : 0;
+  const energyBalance = hasBmr ? dailyCalories - targetCalories : 0;
 
   // Dynamic targets (1.8g/kg protein, 4g/kg carbohydrate, 1g/kg fat)
-  const targetProtein = Math.round(weightKg * 1.8);
-  const targetCarbs = Math.round(weightKg * 4.0);
-  const targetFat = Math.round(weightKg * 1.0);
+  const targetProtein = weightKg ? Math.round(weightKg * 1.8) : 0;
+  const targetCarbs = weightKg ? Math.round(weightKg * 4.0) : 0;
+  const targetFat = weightKg ? Math.round(weightKg * 1.0) : 0;
 
   // Hydration tracking
   const handleAddWater = () => {
@@ -105,9 +113,15 @@ export function Nutrition() {
         <div className="bento-card p-6 border border-border/60">
           <div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Balance Énergétique</span>
-            <span className={`text-3xl font-black font-mono block mt-1 ${energyBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-              {energyBalance > 0 ? '+' : ''}{energyBalance} <span className="text-xs font-normal text-muted-foreground">kcal</span>
-            </span>
+            {hasBmr ? (
+              <span className={`text-3xl font-black font-mono block mt-1 ${energyBalance > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                {energyBalance > 0 ? '+' : ''}{energyBalance} <span className="text-xs font-normal text-muted-foreground">kcal</span>
+              </span>
+            ) : (
+              <span className="text-sm font-semibold flex items-center gap-1 text-muted-foreground mt-2">
+                <AlertCircle size={14} className="text-red-400" /> Profil incomplet
+              </span>
+            )}
           </div>
           <div className="space-y-1.5 mt-4">
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
@@ -116,7 +130,7 @@ export function Nutrition() {
             </div>
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
               <span>Métabolisme (BMR) :</span>
-              <span className="text-red-400">-{bmr}</span>
+              <span className={hasBmr ? "text-red-400" : "text-muted-foreground"}>{hasBmr ? `-${bmr}` : 'Inconnu'}</span>
             </div>
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
               <span>Dépense Active (Garmin) :</span>
@@ -130,18 +144,18 @@ export function Nutrition() {
           <div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Protéines (Bâtisseur)</span>
             <span className="text-3xl font-black font-mono block mt-1 text-indigo-400">
-              {dailyProtein}g <span className="text-xs font-normal text-muted-foreground">/ {targetProtein}g</span>
+              {dailyProtein}g <span className="text-xs font-normal text-muted-foreground">/ {weightKg ? `${targetProtein}g` : '?'}</span>
             </span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
               <span>Seuil de synthèse musculaire :</span>
-              <span>{Math.round(Math.min(100, (dailyProtein / targetProtein) * 100))}%</span>
+              <span>{targetProtein ? Math.round(Math.min(100, (dailyProtein / targetProtein) * 100)) : 0}%</span>
             </div>
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-indigo-500 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (dailyProtein / targetProtein) * 100)}%` }} 
+                style={{ width: `${targetProtein ? Math.min(100, (dailyProtein / targetProtein) * 100) : 0}%` }} 
               />
             </div>
           </div>
@@ -152,18 +166,18 @@ export function Nutrition() {
           <div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Glucides (Glycogène)</span>
             <span className="text-3xl font-black font-mono block mt-1 text-amber-500">
-              {dailyCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs}g</span>
+              {dailyCarbs}g <span className="text-xs font-normal text-muted-foreground">/ {targetCarbs ? `${targetCarbs}g` : '?'}</span>
             </span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
               <span>Recharge énergétique :</span>
-              <span>{Math.round(Math.min(100, (dailyCarbs / targetCarbs) * 100))}%</span>
+              <span>{targetCarbs ? Math.round(Math.min(100, (dailyCarbs / targetCarbs) * 100)) : 0}%</span>
             </div>
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-amber-500 rounded-full transition-all" 
-                style={{ width: `${Math.min(100, (dailyCarbs / targetCarbs) * 100)}%` }} 
+                style={{ width: `${targetCarbs ? Math.min(100, (dailyCarbs / targetCarbs) * 100) : 0}%` }} 
               />
             </div>
           </div>
