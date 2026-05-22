@@ -24,11 +24,42 @@ import {
 
 export function Connections() {
   const [activeTab, setActiveTab] = useState<'garmin' | 'manual' | 'derived' | 'quality'>('garmin');
+  const [successMsg, setSuccessMsg] = useState("");
   const garminImportLogs = useStore(state => state.garminImportLogs);
   const engineScores = useStore(state => state.engineScores);
   const metrics = useStore(state => state.metrics);
   const activities = useStore(state => state.garminActivities);
   const rejectedMetrics = useStore(state => state.rejectedMetrics || []);
+  const exportData = useStore(state => state.exportLocalData);
+  const clearData = useStore(state => state.clearDomainData);
+
+  const handleExport = () => {
+    const rawJson = exportData();
+    const blob = new Blob([rawJson], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `aura-elite-export-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setSuccessMsg("Exportation réussie ! Votre archive au format JSON portable a été téléchargée.");
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
+
+  const handleClear = (domain: "metrics" | "meals" | "pains" | "menstrual" | "hooper" | "all") => {
+    clearData(domain);
+    const names: Record<string, string> = {
+      metrics: "Métriques Garmin & Imports",
+      meals: "Journal de nutrition & Repas",
+      pains: "Historique des Douleurs",
+      menstrual: "Notes de cycle menstruel",
+      hooper: "Ressentis Hooper & RPE",
+      all: "Base de données entière"
+    };
+    setSuccessMsg(`Succès : Les données du domaine "${names[domain]}" ont été purgées avec succès de votre stockage local.`);
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
 
   // Compute coverage percentages of metrics for the last 7 days
   const recentMetrics = metrics.filter(m => {
@@ -257,6 +288,12 @@ export function Connections() {
 
       {activeTab === 'quality' && (
         <div className="space-y-6">
+          {successMsg && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl text-center">
+              {successMsg}
+            </div>
+          )}
+
           <div className="bento-card border border-red-500/20 bg-red-500/5 p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-1">
               <span className="text-[11px] font-mono tracking-wider text-red-600 font-bold uppercase">Quarantaine de données</span>
@@ -295,6 +332,81 @@ export function Connections() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* RGPD and local privacy controls card */}
+          <div className="bento-card p-6 border border-border">
+            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+              <Shield size={18} className="text-primary" />
+              Sécurité, Contrôle RGPD & Privauté Globale
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-6">
+              Aura Elite garantit la pleine souveraineté de vos données cliniques et sportives. L'intégralité de vos informations personnelles réside exclusivement dans votre stockage de navigateur local. Vous pouvez à tout moment exporter votre dossier complet ou purger de manière sélective certaines catégories.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-xs uppercase text-muted-foreground tracking-wider mb-1">Sauvegarde & Portabilité (JSON)</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Téléchargez instantanément l'intégralité de votre profil clinique, alimentaire, sportif et vos métriques brutes sous un format structuré JSON portable (conforme à l'article 20 du RGPD).
+                  </p>
+                </div>
+                <div>
+                  <Button 
+                    onClick={handleExport} 
+                    className="bg-primary text-white hover:bg-primary/90 text-xs py-2 px-4 rounded-xl font-medium w-full md:w-auto"
+                  >
+                    Exporter mes données (.json)
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t md:border-t-0 md:border-l border-border/60 pt-4 md:pt-0 md:pl-6">
+                <h4 className="font-bold text-xs uppercase text-red-500 tracking-wider">Droit à l'effacement définitif (Droit à l'oubli)</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Détruisez instantanément pour toujours les catégories d'historique choisies. Cette commande s'exécute directement sur votre stockage local s'en aucune trace résiduelle.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleClear("metrics")} 
+                    className="text-[11px] text-red-400 hover:bg-red-500/5 hover:text-red-500 border-red-500/10 hover:border-red-500/20 py-1.5"
+                  >
+                    Purger Métriques
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleClear("meals")} 
+                    className="text-[11px] text-red-400 hover:bg-red-500/5 hover:text-red-500 border-red-500/10 hover:border-red-500/20 py-1.5"
+                  >
+                    Purger Nutrition
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleClear("pains")} 
+                    className="text-[11px] text-red-400 hover:bg-red-500/5 hover:text-red-500 border-red-500/10 hover:border-red-500/20 py-1.5"
+                  >
+                    Purger Douleurs
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleClear("hooper")} 
+                    className="text-[11px] text-red-400 hover:bg-red-500/5 hover:text-red-500 border-red-500/10 hover:border-red-500/20 py-1.5"
+                  >
+                    Purger Hooper/RPE
+                  </Button>
+                </div>
+                <div className="pt-2 border-t border-border/40">
+                  <Button 
+                    onClick={() => handleClear("all")} 
+                    className="w-full bg-red-600 hover:bg-red-700 text-white text-xs py-2 font-bold rounded-lg shadow-sm"
+                  >
+                    Tout détruire (Réinitialiser Aura Elite)
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

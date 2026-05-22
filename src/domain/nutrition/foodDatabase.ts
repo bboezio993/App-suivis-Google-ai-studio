@@ -1,4 +1,4 @@
-import { FoodItem, ServingUnit } from './foodTypes';
+import { FoodItem, ServingUnit, Recipe } from './foodTypes';
 
 export const internalFoodDatabase: FoodItem[] = [
   {
@@ -344,3 +344,36 @@ export const cookingYieldFactors = [
   { foodId: "pates_crues", fromState: "raw", toState: "cooked", factor: 2.7, note: "100g de pâtes crues donnent environ 270g de pâtes cuites." },
   { foodId: "riz_cru", fromState: "raw", toState: "cooked", factor: 2.8, note: "100g de riz cru absorbent l'eau et atteignent 280g de riz cuit." }
 ];
+
+export const internalRecipes: Recipe[] = [
+  {
+    id: "recette_shaker_recup",
+    name: "Shaker Récupération Hydrates & Protéines 🥛",
+    description: "Le shake de récupération par excellence après une séance de course longue ou d'intervalles.",
+    items: [
+      { foodId: "whey_isolate", foodName: "Whey Isolate (Isolat de lactosérum)", quantity: 1, unit: "piece", gramsSelected: 30, calories: 110, protein: 26, carbs: 0.8, fat: 0.2 },
+      { foodId: "banane", foodName: "Banane fraîche", quantity: 1, unit: "piece", gramsSelected: 118, calories: 105, protein: 1.3, carbs: 26.9, fat: 0.4 }
+    ]
+  },
+  {
+    id: "recette_pates_saumon",
+    name: "Pâtes au Saumon de l'Athlète 🍝",
+    description: "Un apport riche en acides gras oméga-3 et en glycogène pour favoriser la réparation nerveuse et musculaire.",
+    items: [
+      { foodId: "pates_cuites", foodName: "Pâtes cuites à l'eau (sans sel)", quantity: 250, unit: "g", gramsSelected: 250, calories: 325, protein: 11.3, carbs: 65, fat: 1.3 },
+      { foodId: "saumon", foodName: "Pavé de saumon cuit au four", quantity: 120, unit: "g", gramsSelected: 120, calories: 238, protein: 27.6, carbs: 0, fat: 13.8 },
+      { foodId: "huile_olive", foodName: "Huile d'olive extra vierge", quantity: 5, unit: "ml", gramsSelected: 4.6, calories: 41, protein: 0, carbs: 0, fat: 4.6 }
+    ]
+  },
+  {
+    id: "recette_porridge_endurance",
+    name: "Porridge Endurance & Avoine Matinal 🥣",
+    description: "Une libération lente d'énergie pour soutenir les sorties d'endurance fondamentales ou sorties longues.",
+    items: [
+      { foodId: "flocons_avoine", foodName: "Flocons d'avoine brute", quantity: 80, unit: "g", gramsSelected: 80, calories: 303, protein: 10.4, carbs: 54.4, fat: 5.2 },
+      { foodId: "banane", foodName: "Banane fraîche", quantity: 0.5, unit: "piece", gramsSelected: 59, calories: 53, protein: 0.7, carbs: 13.5, fat: 0.2 },
+      { foodId: "oeuf_entier", foodName: "Œuf de poule (cuit)", quantity: 1, unit: "piece", gramsSelected: 55, calories: 79, protein: 6.9, carbs: 0.4, fat: 5.2 }
+    ]
+  }
+];
+

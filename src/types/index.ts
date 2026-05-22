@@ -321,3 +321,17 @@ export interface PainLog {
   historyEpisodes?: string; // first occurrence, recurring
 }
 
+export interface Recipe {
+  id: string;
+  name: string;
+  description?: string;
+  items: {
+    foodId: string;
+    foodName: string;
+    quantity: number;
+    unit: string;
+    gramsSelected: number;
+  }[];
+}
+
+

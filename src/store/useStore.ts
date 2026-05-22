@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog, RejectedMetric } from '../types';
+import { NormalizedMetric, ConnectionState, DataSource, UserProfile, MenstrualLog, GarminImportLog, GarminActivity, HooperLog, SessionRPE, LifeContextLog, EngineScores, WeeklyScreeningLog, MealLog, PainLog, RejectedMetric, Recipe } from '../types';
 import { runAnalysisEngine } from '../services/analysisEngine/engine';
-import { syncMetricsToFirestore, syncLogToFirestore, syncProfileToFirestore, syncActivitiesToFirestore } from '../services/firebaseSync';
+import { syncProfileToFirestore } from '../services/firebaseSync';
 import { metricRegistry } from '../domain/metrics/metricRegistry';
-import { assessDataQuality } from '../domain/dataQuality/dataQualityService';
+import { createValidatedMetric } from '../domain/metrics/metricFactory';
 
 // Custom storage for IndexedDB
 const idbStorage: StateStorage = {
@@ -35,6 +35,7 @@ export interface AppState {
   painLogs: PainLog[];
   contextLogs: LifeContextLog[];
   engineScores: EngineScores | null;
+  recipes: Recipe[];
   addMetric: (metric: NormalizedMetric) => void;
   addMetrics: (metrics: NormalizedMetric[]) => void;
   updateConnection: (source: DataSource, status: ConnectionState['status']) => void;
@@ -49,7 +50,11 @@ export interface AppState {
   addMealLog: (log: MealLog) => void;
   addPainLog: (log: PainLog) => void;
   addContextLog: (log: LifeContextLog) => void;
+  addRecipe: (recipe: Recipe) => void;
+  deleteRecipe: (id: string) => void;
   computeEngineScores: () => void;
+  exportLocalData: () => string;
+  clearDomainData: (domain: "metrics" | "meals" | "pains" | "menstrual" | "hooper" | "all") => void;
 }
 
 const initialProfile: UserProfile = {
@@ -82,45 +87,69 @@ export const useStore = create<AppState>()(
       painLogs: [],
       contextLogs: [],
       engineScores: null,
+      recipes: [],
       addMetric: (metric) => {
-        if (!metricRegistry[metric.type]) {
-          console.warn(`[Store] Rejected unregistered metric type: ${metric.type}`);
+        const result = createValidatedMetric({
+          source: metric.source,
+          timestamp: metric.timestamp,
+          type: metric.type,
+          value: metric.value,
+          unit: metric.unit,
+          sourceId: metric.sourceId
+        });
+        if (!result.success) {
+          console.warn(`[Store] Metric raw validation rejected:`, result.reason);
           set((state) => ({
-            rejectedMetrics: [...state.rejectedMetrics, { id: crypto.randomUUID(), metric, reason: "Unregistered metric type", source: metric.source, timestamp: metric.timestamp, typeProposed: metric.type, value: metric.value, unit: metric.unit, confidenceScore: metric.confidenceScore || 0 }]
+            rejectedMetrics: [
+              ...state.rejectedMetrics,
+              {
+                id: crypto.randomUUID(),
+                metric: result.metric || metric,
+                reason: result.reason || "Validation failed",
+                source: metric.source,
+                timestamp: metric.timestamp,
+                typeProposed: result.typeProposed,
+                value: result.valueProposed,
+                unit: metric.unit,
+                confidenceScore: result.quality?.finalConfidence || 0,
+                importLogId: metric.sourceId
+              }
+            ]
           }));
           return;
         }
-        const quality = assessDataQuality(metric);
-        metric.confidenceScore = quality.finalConfidence;
-        
-        if (quality.finalConfidence < 50) {
-          console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, metric);
-          set((state) => ({
-            rejectedMetrics: [...state.rejectedMetrics, { id: crypto.randomUUID(), metric, reason: `Low quality (${quality.finalConfidence}%)`, source: metric.source, timestamp: metric.timestamp, typeProposed: metric.type, value: metric.value, unit: metric.unit, confidenceScore: quality.finalConfidence }]
-          }));
-          return;
-        }
-        
-        set((state) => ({ metrics: [...state.metrics, metric] }));
+        const validated = result.metric!;
+        set((state) => ({ metrics: [...state.metrics, validated] }));
         get().computeEngineScores();
       },
       addMetrics: (metrics) => {
         const rejected: RejectedMetric[] = [];
-        const validMetrics = metrics.filter(m => {
-          if (!metricRegistry[m.type]) {
-            console.warn(`[Store] Rejected unregistered metric type: ${m.type}`);
-            rejected.push({ id: crypto.randomUUID(), metric: m, reason: "Unregistered metric type", source: m.source, timestamp: m.timestamp, typeProposed: m.type, value: m.value, unit: m.unit, confidenceScore: m.confidenceScore || 0, importLogId: m.sourceId });
-            return false;
+        const validMetrics: NormalizedMetric[] = [];
+        metrics.forEach(m => {
+          const result = createValidatedMetric({
+            source: m.source,
+            timestamp: m.timestamp,
+            type: m.type,
+            value: m.value,
+            unit: m.unit,
+            sourceId: m.sourceId
+          });
+          if (!result.success) {
+            rejected.push({
+              id: crypto.randomUUID(),
+              metric: result.metric || m,
+              reason: result.reason || "Validation failed",
+              source: m.source,
+              timestamp: m.timestamp,
+              typeProposed: result.typeProposed,
+              value: result.valueProposed,
+              unit: m.unit,
+              confidenceScore: result.quality?.finalConfidence || 0,
+              importLogId: m.sourceId
+            });
+          } else {
+            validMetrics.push(result.metric!);
           }
-          const quality = assessDataQuality(m);
-          m.confidenceScore = quality.finalConfidence;
-          
-          if (quality.finalConfidence < 50) {
-             console.warn(`[Store] Rejected low quality metric (${quality.finalConfidence}%):`, m);
-             rejected.push({ id: crypto.randomUUID(), metric: m, reason: `Low quality (${quality.finalConfidence}%)`, source: m.source, timestamp: m.timestamp, typeProposed: m.type, value: m.value, unit: m.unit, confidenceScore: quality.finalConfidence, importLogId: m.sourceId });
-             return false;
-          }
-          return true;
         });
         set((state) => {
           const metricMap = new Map(state.metrics.map(m => [m.id, m]));
@@ -227,10 +256,66 @@ export const useStore = create<AppState>()(
         });
         get().computeEngineScores();
       },
+      addRecipe: (recipe) => {
+        set((state) => {
+          const filtered = (state.recipes || []).filter(r => r.id !== recipe.id);
+          return { recipes: [...filtered, recipe] };
+        });
+      },
+      deleteRecipe: (id) => {
+        set((state) => ({
+          recipes: (state.recipes || []).filter(r => r.id !== id)
+        }));
+      },
       computeEngineScores: () => {
         const state = get();
         const scores = runAnalysisEngine(state);
         set({ engineScores: scores });
+      },
+      exportLocalData: () => {
+        const state = get();
+        const exportObj = {
+          metrics: state.metrics,
+          rejectedMetrics: state.rejectedMetrics,
+          menstrualLogs: state.menstrualLogs,
+          garminActivities: state.garminActivities,
+          hooperLogs: state.hooperLogs,
+          sessionRpeLogs: state.sessionRpeLogs,
+          mealLogs: state.mealLogs,
+          painLogs: state.painLogs,
+          contextLogs: state.contextLogs,
+          userProfile: state.userProfile,
+          exportDate: new Date().toISOString()
+        };
+        return JSON.stringify(exportObj, null, 2);
+      },
+      clearDomainData: (domain) => {
+        set((state) => {
+          const updates: Partial<AppState> = {};
+          if (domain === "metrics" || domain === "all") {
+            updates.metrics = [];
+            updates.rejectedMetrics = [];
+            updates.garminActivities = [];
+            updates.garminImportLogs = [];
+          }
+          if (domain === "meals" || domain === "all") {
+            updates.mealLogs = [];
+          }
+          if (domain === "pains" || domain === "all") {
+            updates.painLogs = [];
+          }
+          if (domain === "menstrual" || domain === "all") {
+            updates.menstrualLogs = [];
+          }
+          if (domain === "hooper" || domain === "all") {
+            updates.hooperLogs = [];
+            updates.sessionRpeLogs = [];
+            updates.weeklyScreeningLogs = [];
+            updates.contextLogs = [];
+          }
+          return updates;
+        });
+        get().computeEngineScores();
       }
     }),
     {

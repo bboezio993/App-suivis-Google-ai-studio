@@ -72,3 +72,21 @@ export interface NutrientSummary {
   fiber: number;
   sodium: number;
 }
+
+export interface Recipe {
+  id: string;
+  name: string;
+  description?: string;
+  items: {
+    foodId: string;
+    foodName: string;
+    quantity: number;
+    unit: string;
+    gramsSelected: number;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  }[];
+}
+
