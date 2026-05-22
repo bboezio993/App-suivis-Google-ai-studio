@@ -19,43 +19,43 @@ export const evidenceRegistry: Record<string, EvidenceItem> = {
       "Souffre de forte variabilité selon l'heure de mesure (préférer les valeurs de sommeil complet).",
       "Très sensible à la consommation d'alcool, de repas tardifs et au stress psychologique aigu."
     ],
-    userFacingExplanation: "Une HRV basse signifie que votre organisme s'adapte ou réagit activement pour faire face à une fatigue physique ou mentale. Votre niveau de récupération global est potentiellement restreint et à observer avec prudence."
+    userFacingExplanation: "Une HRV basse peut être compatible avec une phase d'adaptation ou de récupération active face à une fatigue physique ou mentale. Votre niveau de récupération global est à surveiller."
   },
   rhr_elevated: {
     id: "rhr_elevated",
     topic: "Rythme Cardiaque de Repos (RHR)",
-    claim: "Une augmentation de la fréquence cardiaque au repos de plus de 3-5 bpm par rapport à la moyenne à long terme est un signal compatible avec une fatigue systémique ou un stress psychologique, à interpréter avec le contexte.",
+    claim: "Une augmentation de la fréquence cardiaque au repos de plus de 3-5 bpm par rapport à la moyenne à long terme est un signal compatible avec une fatigue temporaire ou de simples fluctuations physiologiques ordinaires, à surveiller avec le contexte.",
     evidenceLevel: "controlled_trial",
     applicability: "Idéalement mesuré en continu durant la phase stable du sommeil.",
     limitations: [
       "Peut être masqué par l'usage de bêta-bloquants.",
       "Fortement corrélé à la déshydratation temporaire ou d'un entraînement en soirée."
     ],
-    userFacingExplanation: "Un rythme cardiaque au repos plus élevé de quelques battements peut être associé à des fluctuations ordinaires de récupération. À interpréter avec le sommeil, le contexte et le ressenti global, car les données seules ne permettent pas de conclure."
+    userFacingExplanation: "Un rythme cardiaque au repos plus élevé de quelques battements peut être compatible avec des fluctuations normales de fatigue. À surveiller avec le sommeil et les entraînements."
   },
   sleep_debt: {
     id: "sleep_debt",
     topic: "Sommeil",
-    claim: "Une restriction chronique de sommeil (< 6h par nuit ou dette accumulée de > 4h sur une semaine) dégrade grandement les réserves d'énergie estimées et peut être associée à une sensibilité physique accrue.",
+    claim: "Une restriction de sommeil (< 6h par nuit ou dette accumulée de > 4h sur une semaine) peut être compatible avec un épuisement plus rapide des réserves d'énergie estimées et à surveiller avec le ressenti global.",
     evidenceLevel: "controlled_trial",
     applicability: "Ajustable selon le profil génétique du dormeur (court vs long dormeur).",
     limitations: [
       "Le besoin absolu de sommeil est très individuel.",
       "La qualité globale perçue (efficacité) est parfois plus prédictive que la durée exacte chez certains athlètes."
     ],
-    userFacingExplanation: "Vos nuits récentes peuvent être compatibles avec une récupération moindre et des ressentis de fatigue accrus. Ce signal est à interpréter avec le sommeil global, le ressenti subjectif et le contexte."
+    userFacingExplanation: "Vos nuits récentes peuvent être compatibles avec une récupération moindre et des ressentis de fatigue accrus. Ce signal est à surveiller selon votre ressenti de forme habituel."
   },
   acwr_caution: {
     id: "acwr_caution",
     topic: "Charge d'Entraînement (ACWR)",
-    claim: "Un Acute:Chronic Workload Ratio (ratio charge aiguë / chronique) supérieur à 1.5 peut être associé à une fatigue prolongée apparaissant sous 7 à 10 jours.",
+    claim: "Un Acute:Chronic Workload Ratio (ratio charge aiguë / chronique) supérieur à 1.5 peut être associé à une fatigue prolongée, données insuffisantes pour conclure seul.",
     evidenceLevel: "systematic_review",
     applicability: "S'applique principalement aux sports d'endurance, de course à pied et de football.",
     limitations: [
       "Le ratio exact est sensible aux données manquantes.",
       "Ne prend pas en compte les variations de l'état psychologique qui agissent comme multiplicateurs."
     ],
-    userFacingExplanation: "Votre volume/intensité d'entraînement a augmenté plus vite que votre moyenne habituelle. L'organisme requiert une certaine progressivité pour assimiler convenablement ce pic de stimulus."
+    userFacingExplanation: "Votre volume/intensité d'entraînement a augmenté plus vite que votre moyenne habituelle. Une approche progressive de l'entraînement peut être compatible avec une meilleure assimilation de ce pic de stimulus."
   },
   rpe_mismatch: {
     id: "rpe_mismatch",

@@ -75,8 +75,7 @@ export function Sleep() {
           <div className="flex items-start gap-3 p-4 bg-[#F2F2F7] rounded-xl">
             <AlertCircle size={16} className="text-[#0071E3] shrink-0 mt-0.5" />
             <p className="text-xs text-[#1D1D1F]">
-              <strong>Le saviez-vous ?</strong> Une dette de sommeil de 2 heures réduit les performances cognitives 
-              et augmente le risque de blessure de 1.7x le lendemain.
+              <strong>Le saviez-vous ?</strong> Un sommeil insuffisant ou irrégulier peut être associé à une récupération moindre et à une fatigue accrue. Ce signal doit être interprété avec le ressenti, la charge d’entraînement et le contexte.
             </p>
           </div>
         </div>

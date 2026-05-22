@@ -233,6 +233,14 @@ export interface NutritionAnalysisResult {
     hydration: number;
     sodium: number;
     objective: string;
+    targetStatuses?: {
+      calories: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+      protein: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+      carbs: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+      fat: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+      hydration: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+      sodium: "manual" | "estimated_from_profile" | "generic_placeholder" | "undefined";
+    };
   };
 }
 
